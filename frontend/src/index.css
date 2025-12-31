@@ -1,0 +1,377 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Quicksand:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 35 20% 97%;
+    --foreground: 20 14% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 20 14% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14% 10%;
+
+    --primary: 24 88% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 345 75% 45%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 35 15% 92%;
+    --muted-foreground: 25 10% 45%;
+
+    --accent: 40 100% 50%;
+    --accent-foreground: 20 14% 10%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 35 20% 88%;
+    --input: 35 20% 88%;
+    --ring: 24 88% 50%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --radius: 0.75rem;
+
+    --gradient-warm: linear-gradient(135deg, hsl(24 88% 50%) 0%, hsl(345 75% 45%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(35 20% 99%) 0%, hsl(35 20% 97%) 100%);
+    --shadow-glow: 0 10px 40px -10px hsl(24 88% 50% / 0.3);
+    --shadow-card: 0 4px 20px hsl(20 14% 10% / 0.08);
+
+    --sidebar-background: 35 25% 98%;
+    --sidebar-foreground: 20 14% 10%;
+    --sidebar-primary: 24 88% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 35 25% 95%;
+    --sidebar-accent-foreground: 20 14% 10%;
+    --sidebar-border: 35 20% 90%;
+    --sidebar-ring: 24 88% 50%;
+  }
+
+  .dark {
+    --background: 20 15% 8%;
+    --foreground: 35 20% 95%;
+
+    --card: 20 15% 10%;
+    --card-foreground: 35 20% 95%;
+
+    --popover: 20 15% 10%;
+    --popover-foreground: 35 20% 95%;
+
+    --primary: 24 88% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 345 75% 50%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 20 15% 15%;
+    --muted-foreground: 35 15% 65%;
+
+    --accent: 40 100% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 20 15% 18%;
+    --input: 20 15% 18%;
+    --ring: 24 88% 55%;
+
+    --success: 142 76% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 55%;
+    --warning-foreground: 0 0% 100%;
+
+    --gradient-warm: linear-gradient(135deg, hsl(24 88% 55%) 0%, hsl(345 75% 50%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(20 15% 10%) 0%, hsl(20 15% 8%) 100%);
+    --shadow-glow: 0 10px 40px -10px hsl(24 88% 55% / 0.4);
+    --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.5);
+
+    --sidebar-background: 20 15% 10%;
+    --sidebar-foreground: 35 20% 95%;
+    --sidebar-primary: 24 88% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 20 15% 15%;
+    --sidebar-accent-foreground: 35 20% 95%;
+    --sidebar-border: 20 15% 18%;
+    --sidebar-ring: 24 88% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Poppins', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-weight: 700;
+  }
+
+  /* Smooth animations */
+  * {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary));
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.8);
+  }
+}
+
+/* Animation utilities */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.6s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.4s ease-out;
+}
+
+/* Thermal Printer Receipt Styling */
+.thermal-receipt {
+  font-family: 'Courier New', Courier, monospace;
+  width: 80mm;
+  max-width: 100%;
+  background: white;
+  color: black;
+  padding: 10mm;
+  line-height: 1.4;
+  font-size: 12px;
+}
+
+/* Responsive thermal receipt for mobile */
+@media (max-width: 640px) {
+  .thermal-receipt {
+    width: 100%;
+    padding: 5mm;
+    font-size: 11px;
+  }
+}
+
+.thermal-receipt-header {
+  text-align: center;
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 8px;
+  border-bottom: 2px dashed #000;
+  padding-bottom: 8px;
+}
+
+.thermal-receipt-line {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 0;
+  flex-wrap: wrap;
+}
+
+.thermal-receipt-separator {
+  border-top: 1px dashed #000;
+  margin: 8px 0;
+}
+
+.thermal-receipt-footer {
+  text-align: center;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 2px dashed #000;
+  font-size: 11px;
+}
+
+/* Responsive utilities */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Mobile-friendly spacing */
+@media (max-width: 640px) {
+  .mobile-stack>*+* {
+    margin-top: 0.5rem;
+  }
+
+  .mobile-text-sm {
+    font-size: 0.875rem;
+  }
+
+  .mobile-text-xs {
+    font-size: 0.75rem;
+  }
+}
+
+/* Table Pulse Animation */
+@keyframes tablePulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(247, 119, 34, 0);
+  }
+
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 10px rgba(247, 119, 34, 0.3);
+  }
+}
+
+.table-pulse {
+  animation: tablePulse 1.5s ease-in-out infinite;
+}
+
+/* Glassmorphism Effects */
+.glass-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass-card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Notification Badge Pulse */
+@keyframes badgePulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.notification-badge {
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+/* Print styles for receipts */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .thermal-receipt,
+  .thermal-receipt * {
+    visibility: visible;
+  }
+
+  .thermal-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 10mm;
+  }
+
+  /* Hide print buttons and other UI elements */
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  /* Set page size for thermal printer */
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+}
