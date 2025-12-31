@@ -8,10 +8,10 @@ import orderRoutes from "./routes/order.routes.js";
 import billRoutes from "./routes/bill.routes.js";
 import superadminRoutes from "./routes/superadmin.routes.js";
 import servedOrderRoutes from "./routes/servedOrder.routes.js";
-import path from "path"
+// import path from "path"
 
 const app = express();
-const _dirname = path.resolve();
+// const _dirname = path.resolve();
 // CORS configuration - allow multiple frontend URLs
 const allowedOrigins = [
   ENV.CLIENT_URL,
@@ -55,10 +55,10 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Server error" });
 });
 
-app.use(express.static(path.join(_dirname, "/frontend/dist")))
-app.get(/.*/, (_, res) => {
-  res.sendFile(path.resolve(_dirname, "frontend", "dist", "index.html"));
-});
+// app.use(express.static(path.join(_dirname, "/frontend/dist")))
+// app.get(/.*/, (_, res) => {
+//   res.sendFile(path.resolve(_dirname, "frontend", "dist", "index.html"));
+// });
 
 export default app;
 
