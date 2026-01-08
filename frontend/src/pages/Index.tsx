@@ -290,6 +290,7 @@ const Index = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -297,6 +298,19 @@ const Index = () => {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    // Detect if device is mobile
+    const checkMobile = () => {
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const isSmallScreen = window.innerWidth < 768;
+      setIsMobile(isTouchDevice || isSmallScreen);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   const containerVariants = {
@@ -331,14 +345,16 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
-      {/* Custom Smooth Cursor */}
-      <SmoothCursor
-        color="#ea580c"
-        size={25}
-        rotateOnMove={true}
-        scaleOnClick={true}
-        glowEffect={true}
-      />
+      {/* Custom Smooth Cursor - Only on Desktop */}
+      {!isMobile && (
+        <SmoothCursor
+          color="#ea580c"
+          size={25}
+          rotateOnMove={true}
+          scaleOnClick={true}
+          glowEffect={true}
+        />
+      )}
 
       {/* Navbar */}
       <motion.nav
@@ -1099,9 +1115,9 @@ const Index = () => {
           <div className="border-t border-gray-800 mt-12 pt-8">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <p className="text-gray-400 text-sm">
-                © 2025 KHAO PEEO. All rights reserved. 
+                © 2025 KHAO PEEO. All rights reserved.
                 <br />
-                 <a className="" href="https://netbro.in/">Netbro</a>
+                <a className="" href="https://netbro.in/">Netbro</a>
               </p>
               <div className="flex gap-6 text-sm">
                 {["Privacy Policy", "Terms of Service", "Refund Policy"].map((item, i) => (

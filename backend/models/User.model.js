@@ -24,6 +24,16 @@ const userSchema = new mongoose.Schema(
       enum: ["owner", "admin", "waiter", "superadmin"],
       default: "admin",
     },
+    isOnline: {
+      type: Boolean,
+      default: false,
+    },
+    lastLogin: {
+      type: Date,
+    },
+    lastActivity: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );

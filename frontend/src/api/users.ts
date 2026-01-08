@@ -9,10 +9,12 @@ export interface User {
     role: 'owner' | 'admin' | 'waiter' | 'superadmin';
     is_active?: boolean;
     isActive?: boolean;
+    isOnline?: boolean;
     created_at?: string;
     createdAt?: string;
     last_login?: string;
     lastLogin?: string;
+    lastActivity?: string;
 }
 
 export const usersAPI = {
@@ -30,7 +32,7 @@ export const usersAPI = {
         email: string;
         password: string;
         full_name: string;
-        role: 'admin' | 'waiter';
+        role: 'admin' | 'waiter' | 'owner';
     }): Promise<User> => {
         const response = await apiClient.post<User>('/users', data);
         return response.data;

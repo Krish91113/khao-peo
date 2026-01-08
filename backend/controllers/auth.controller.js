@@ -66,6 +66,12 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
+    // Update online status and last login
+    user.isOnline = true;
+    user.lastLogin = new Date();
+    user.lastActivity = new Date();
+    await user.save();
+
     const token = generateToken(user);
 
     return res.json({
@@ -74,6 +80,8 @@ export const login = async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         role: user.role,
+        isOnline: user.isOnline,
+        lastLogin: user.lastLogin,
       },
       token,
     });
@@ -83,4 +91,24 @@ export const login = async (req, res) => {
   }
 };
 
+// @route   POST /api/auth/logout
+// @desc    Logout user and set offline status
+// @access  Private
+export const logout = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?._id;
+
+    if (userId) {
+      await User.findByIdAndUpdate(userId, {
+        isOnline: false,
+        lastActivity: new Date(),
+      });
+    }
+
+    return res.json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.error("Logout error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
 

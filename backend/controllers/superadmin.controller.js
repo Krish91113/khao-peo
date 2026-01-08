@@ -1,4 +1,5 @@
 import { User } from "../models/User.model.js";
+import bcrypt from "bcryptjs";
 
 // Get all users (superadmin only)
 export const getAllUsers = async (req, res) => {
@@ -102,3 +103,193 @@ export const getRecentSignups = async (req, res) => {
         });
     }
 };
+
+// Get currently online users
+export const getOnlineUsers = async (req, res) => {
+    try {
+        const onlineUsers = await User.find({ isOnline: true })
+            .select("-password")
+            .sort({ lastActivity: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: onlineUsers.length,
+            users: onlineUsers,
+        });
+    } catch (error) {
+        console.error("Error fetching online users:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch online users",
+        });
+    }
+};
+
+// Create new user (superadmin only)
+export const createUser = async (req, res) => {
+    try {
+        const { fullName, email, password, role } = req.body;
+
+        if (!fullName || !email || !password || !role) {
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required",
+            });
+        }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: "User with this email already exists",
+            });
+        }
+
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Create user
+        const user = await User.create({
+            fullName,
+            email,
+            password: hashedPassword,
+            role,
+        });
+
+        res.status(201).json({
+            success: true,
+            message: "User created successfully",
+            user: {
+                id: user._id,
+                fullName: user.fullName,
+                email: user.email,
+                role: user.role,
+            },
+        });
+    } catch (error) {
+        console.error("Error creating user:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to create user",
+        });
+    }
+};
+
+// Update user (superadmin only)
+export const updateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { fullName, role, password } = req.body;
+
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+
+        // Update fields
+        if (fullName) user.fullName = fullName;
+        if (role) user.role = role;
+        if (password) {
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(password, salt);
+        }
+
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: "User updated successfully",
+            user: {
+                id: user._id,
+                fullName: user.fullName,
+                email: user.email,
+                role: user.role,
+            },
+        });
+    } catch (error) {
+        console.error("Error updating user:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to update user",
+        });
+    }
+};
+
+// Delete user (superadmin only)
+export const deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+
+        // Prevent deleting superadmin
+        if (user.role === "superadmin") {
+            return res.status(403).json({
+                success: false,
+                message: "Cannot delete superadmin user",
+            });
+        }
+
+        await User.findByIdAndDelete(id);
+
+        res.status(200).json({
+            success: true,
+            message: "User deleted successfully",
+        });
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to delete user",
+        });
+    }
+};
+
+// Toggle user active status
+export const toggleUserStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+
+        // Toggle isOnline status (can be used for activate/deactivate)
+        user.isOnline = !user.isOnline;
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: "User status updated successfully",
+            user: {
+                id: user._id,
+                fullName: user.fullName,
+                email: user.email,
+                role: user.role,
+                isOnline: user.isOnline,
+            },
+        });
+    } catch (error) {
+        console.error("Error toggling user status:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to update user status",
+        });
+    }
+};
+

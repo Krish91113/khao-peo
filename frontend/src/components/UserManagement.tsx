@@ -37,7 +37,7 @@ export default function UserManagement() {
         email: "",
         password: "",
         full_name: "",
-        role: "waiter" as "admin" | "waiter",
+        role: "waiter" as "admin" | "waiter" | "owner",
     });
 
     // Fetch all users using superadmin API
@@ -133,7 +133,7 @@ export default function UserManagement() {
             email: user.email,
             password: "",
             full_name: user.full_name || user.fullName || "",
-            role: user.role as "admin" | "waiter",
+            role: user.role as "admin" | "waiter" | "owner",
         });
         setIsEditDialogOpen(true);
     };
@@ -285,6 +285,7 @@ export default function UserManagement() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
+                                        <SelectItem value="owner">Owner</SelectItem>
                                         <SelectItem value="admin">Admin</SelectItem>
                                         <SelectItem value="waiter">Waiter</SelectItem>
                                     </SelectContent>
@@ -322,6 +323,17 @@ export default function UserManagement() {
                                             <Badge variant={getRoleBadgeVariant(user.role)}>
                                                 {user.role}
                                             </Badge>
+                                            {user.isOnline ? (
+                                                <Badge className="bg-green-500 hover:bg-green-600">
+                                                    <span className="inline-block w-2 h-2 bg-white rounded-full mr-1 animate-pulse"></span>
+                                                    Online
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="secondary">
+                                                    <span className="inline-block w-2 h-2 bg-gray-400 rounded-full mr-1"></span>
+                                                    Offline
+                                                </Badge>
+                                            )}
                                             {(user.is_active === false || user.isActive === false) && (
                                                 <Badge variant="destructive">Inactive</Badge>
                                             )}
@@ -333,6 +345,11 @@ export default function UserManagement() {
                                                 {new Date(
                                                     user.last_login || user.lastLogin || ""
                                                 ).toLocaleString()}
+                                            </p>
+                                        )}
+                                        {user.isOnline && user.lastActivity && (
+                                            <p className="text-xs text-green-600 mt-1">
+                                                Active now
                                             </p>
                                         )}
                                     </div>
@@ -429,6 +446,7 @@ export default function UserManagement() {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
+                                    <SelectItem value="owner">Owner</SelectItem>
                                     <SelectItem value="admin">Admin</SelectItem>
                                     <SelectItem value="waiter">Waiter</SelectItem>
                                 </SelectContent>
