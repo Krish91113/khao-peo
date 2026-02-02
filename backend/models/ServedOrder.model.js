@@ -23,6 +23,11 @@ const servedOrderDetailSchema = new mongoose.Schema(
 
 const servedOrderSchema = new mongoose.Schema(
     {
+        restaurantId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Restaurant",
+            required: true,
+        },
         tableNumber: {
             type: Number,
             required: true,

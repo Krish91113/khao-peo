@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Printer, Loader2 } from "lucide-react";
+import { Loader2, Printer, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { billsAPI } from "@/api/bills";
+import { restaurantAPI } from "@/api/restaurant";
 import { toast } from "sonner";
 
 interface FinalBillDialogProps {
@@ -19,12 +19,24 @@ const FinalBillDialog = ({ tableId, tableNumber, open, onClose }: FinalBillDialo
     const [loading, setLoading] = useState(true);
     const [billData, setBillData] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
+    const [restaurantName, setRestaurantName] = useState<string>("");
 
     useEffect(() => {
         if (open) {
             generateBill();
+            fetchRestaurantDetails();
         }
     }, [open, tableId]);
+
+    const fetchRestaurantDetails = async () => {
+        try {
+            const details = await restaurantAPI.getMyRestaurant();
+            setRestaurantName(details.name);
+        } catch (error) {
+            console.error("Failed to fetch restaurant details:", error);
+            // Fallback to KHAO PEEO or empty string if fetch fails
+        }
+    };
 
     const generateBill = async () => {
         setLoading(true);
@@ -124,7 +136,7 @@ const FinalBillDialog = ({ tableId, tableNumber, open, onClose }: FinalBillDialo
                         <Card id="final-customer-receipt" className="border-2">
                             <CardHeader className="text-center border-b-2 bg-gradient-to-r from-orange-50 to-red-50">
                                 <div className="space-y-3">
-                                    <CardTitle className="text-4xl font-bold tracking-tight">KHAO PEEO</CardTitle>
+                                    <CardTitle className="text-4xl font-bold tracking-tight">{restaurantName || "KHAO PEEO"}</CardTitle>
                                     <div className="h-px bg-gradient-to-r from-transparent via-primary to-transparent"></div>
                                     <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Customer Receipt</p>
                                     <p className="text-xs text-muted-foreground font-mono">

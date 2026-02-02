@@ -12,22 +12,12 @@ import {
     toggleUserStatus,
 } from "../controllers/superadmin.controller.js";
 
+import { requireRole } from "../middleware/role.middleware.js";
 const router = express.Router();
 
-// Middleware to check if user is superadmin
-const isSuperAdmin = (req, res, next) => {
-    if (req.user.role !== "superadmin") {
-        return res.status(403).json({
-            success: false,
-            message: "Access denied. Superadmin only.",
-        });
-    }
-    next();
-};
-
-// All routes require authentication and superadmin role
+// All routes require authentication and specific roles
 router.use(protect);
-router.use(isSuperAdmin);
+router.use(requireRole("superadmin", "restaurant_owner", "platform_superadmin"));
 
 // Get all users
 router.get("/users", getAllUsers);

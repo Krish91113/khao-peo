@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 // Get all users (superadmin only)
 export const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({})
+        const users = await User.find({ restaurantId: req.restaurantId })
             .select("-password")
             .sort({ createdAt: -1 });
 
@@ -27,7 +27,7 @@ export const getUsersByRole = async (req, res) => {
     try {
         const { role } = req.params;
 
-        const users = await User.find({ role })
+        const users = await User.find({ role, restaurantId: req.restaurantId })
             .select("-password")
             .sort({ createdAt: -1 });
 
@@ -48,17 +48,18 @@ export const getUsersByRole = async (req, res) => {
 // Get user statistics
 export const getUserStats = async (req, res) => {
     try {
-        const totalUsers = await User.countDocuments();
-        const admins = await User.countDocuments({ role: "admin" });
-        const owners = await User.countDocuments({ role: "owner" });
-        const waiters = await User.countDocuments({ role: "waiter" });
-        const superadmins = await User.countDocuments({ role: "superadmin" });
+        const totalUsers = await User.countDocuments({ restaurantId: req.restaurantId });
+        const admins = await User.countDocuments({ role: "admin", restaurantId: req.restaurantId });
+        const owners = await User.countDocuments({ role: "owner", restaurantId: req.restaurantId });
+        const waiters = await User.countDocuments({ role: "waiter", restaurantId: req.restaurantId });
+        const superadmins = await User.countDocuments({ role: "superadmin", restaurantId: req.restaurantId });
 
         // Get recent signups (last 7 days)
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         const recentSignups = await User.countDocuments({
             createdAt: { $gte: sevenDaysAgo },
+            restaurantId: req.restaurantId,
         });
 
         res.status(200).json({
@@ -86,7 +87,7 @@ export const getRecentSignups = async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 10;
 
-        const recentUsers = await User.find({})
+        const recentUsers = await User.find({ restaurantId: req.restaurantId })
             .select("-password")
             .sort({ createdAt: -1 })
             .limit(limit);
@@ -107,7 +108,7 @@ export const getRecentSignups = async (req, res) => {
 // Get currently online users
 export const getOnlineUsers = async (req, res) => {
     try {
-        const onlineUsers = await User.find({ isOnline: true })
+        const onlineUsers = await User.find({ isOnline: true, restaurantId: req.restaurantId })
             .select("-password")
             .sort({ lastActivity: -1 });
 
@@ -156,6 +157,7 @@ export const createUser = async (req, res) => {
             email,
             password: hashedPassword,
             role,
+            restaurantId: req.restaurantId,
         });
 
         res.status(201).json({
@@ -183,7 +185,7 @@ export const updateUser = async (req, res) => {
         const { id } = req.params;
         const { fullName, role, password } = req.body;
 
-        const user = await User.findById(id);
+        const user = await User.findOne({ _id: id, restaurantId: req.restaurantId });
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -225,7 +227,7 @@ export const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const user = await User.findById(id);
+        const user = await User.findOne({ _id: id, restaurantId: req.restaurantId });
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -261,7 +263,7 @@ export const toggleUserStatus = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const user = await User.findById(id);
+        const user = await User.findOne({ _id: id, restaurantId: req.restaurantId });
         if (!user) {
             return res.status(404).json({
                 success: false,

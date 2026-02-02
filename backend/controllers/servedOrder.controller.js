@@ -7,7 +7,7 @@ export const getServedOrders = async (req, res) => {
     try {
         const { tableNumber } = req.query;
 
-        const filter = {};
+        const filter = { restaurantId: req.restaurantId };
         if (tableNumber) {
             filter.tableNumber = parseInt(tableNumber);
         }
@@ -66,7 +66,7 @@ export const getServedOrderById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const servedOrder = await ServedOrder.findById(id)
+        const servedOrder = await ServedOrder.findOne({ _id: id, restaurantId: req.restaurantId })
             .populate("servedBy", "full_name email")
             .lean();
 
@@ -119,7 +119,7 @@ export const getServedOrderBill = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const servedOrder = await ServedOrder.findById(id).lean();
+        const servedOrder = await ServedOrder.findOne({ _id: id, restaurantId: req.restaurantId }).lean();
 
         if (!servedOrder) {
             return res.status(404).json({ message: "Served order not found" });

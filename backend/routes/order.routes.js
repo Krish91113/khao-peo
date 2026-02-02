@@ -11,9 +11,9 @@ import { requireRole } from "../middleware/role.middleware.js";
 const router = express.Router();
 
 router.get("/", protect, getAllOrders);
-router.post("/", protect, requireRole("owner", "admin", "waiter"), createOrder);
+router.post("/", protect, requireRole("restaurant_owner", "restaurant_admin", "waiter"), createOrder);
 router.get("/table/:tableId", protect, getOrdersByTable);
-router.patch("/:id/status", protect, requireRole("owner", "admin", "waiter"), updateOrderStatus);
+router.patch("/:id/status", protect, requireRole("restaurant_owner", "restaurant_admin", "waiter"), updateOrderStatus);
 
 export default router;
 

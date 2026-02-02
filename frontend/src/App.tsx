@@ -13,6 +13,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import WaiterDashboard from "./pages/WaiterDashboard";
 import KitchenDisplay from "./pages/KitchenDisplay";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import PlatformDashboard from "./pages/PlatformDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/waiter-dashboard" element={<WaiterDashboard />} />
             <Route path="/kitchen-display" element={<KitchenDisplay />} />
             <Route path="/superadmin-dashboard" element={<SuperAdminDashboard />} />
+            <Route path="/platform-dashboard" element={<PlatformDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

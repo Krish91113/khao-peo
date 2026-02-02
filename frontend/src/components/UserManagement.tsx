@@ -36,8 +36,8 @@ export default function UserManagement() {
     const [formData, setFormData] = useState({
         email: "",
         password: "",
-        full_name: "",
-        role: "waiter" as "admin" | "waiter" | "owner",
+        fullName: "",
+        role: "waiter",
     });
 
     // Fetch all users using superadmin API
@@ -58,7 +58,7 @@ export default function UserManagement() {
     const stats = statsData?.stats || {};
 
     const createMutation = useMutation({
-        mutationFn: usersAPI.create,
+        mutationFn: superadminAPI.createUser,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["superadmin-users"] });
             queryClient.invalidateQueries({ queryKey: ["superadmin-stats"] });
@@ -73,7 +73,7 @@ export default function UserManagement() {
 
     const updateMutation = useMutation({
         mutationFn: ({ id, data }: { id: string; data: Partial<User> }) =>
-            usersAPI.update(id, data),
+            superadminAPI.updateUser(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["superadmin-users"] });
             queryClient.invalidateQueries({ queryKey: ["superadmin-stats"] });
@@ -87,7 +87,7 @@ export default function UserManagement() {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: usersAPI.delete,
+        mutationFn: superadminAPI.deleteUser,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["superadmin-users"] });
             queryClient.invalidateQueries({ queryKey: ["superadmin-stats"] });
@@ -99,7 +99,7 @@ export default function UserManagement() {
     });
 
     const toggleActiveMutation = useMutation({
-        mutationFn: usersAPI.toggleActive,
+        mutationFn: superadminAPI.toggleUserStatus,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["superadmin-users"] });
             queryClient.invalidateQueries({ queryKey: ["superadmin-stats"] });
@@ -114,13 +114,13 @@ export default function UserManagement() {
         setFormData({
             email: "",
             password: "",
-            full_name: "",
+            fullName: "",
             role: "waiter",
         });
     };
 
     const handleCreate = () => {
-        if (!formData.email || !formData.password || !formData.full_name) {
+        if (!formData.email || !formData.password || !formData.fullName) {
             toast.error("Please fill all fields");
             return;
         }
@@ -132,7 +132,7 @@ export default function UserManagement() {
         setFormData({
             email: user.email,
             password: "",
-            full_name: user.full_name || user.fullName || "",
+            fullName: user.full_name || user.fullName || "",
             role: user.role as "admin" | "waiter" | "owner",
         });
         setIsEditDialogOpen(true);
@@ -141,7 +141,7 @@ export default function UserManagement() {
     const handleUpdate = () => {
         if (!selectedUser) return;
         const updateData: Partial<User> = {
-            full_name: formData.full_name,
+            fullName: formData.fullName,
             role: formData.role,
         };
         if (formData.password) {
@@ -221,14 +221,14 @@ export default function UserManagement() {
                 </Card>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h3 className="text-2xl font-bold">User Management</h3>
                     <p className="text-muted-foreground">Manage admin and waiter accounts</p>
                 </div>
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button>
+                        <Button className="w-full sm:w-auto">
                             <UserPlus className="h-4 w-4 mr-2" />
                             Add User
                         </Button>
@@ -244,9 +244,9 @@ export default function UserManagement() {
                             <div>
                                 <Label>Full Name</Label>
                                 <Input
-                                    value={formData.full_name}
+                                    value={formData.fullName}
                                     onChange={(e) =>
-                                        setFormData({ ...formData, full_name: e.target.value })
+                                        setFormData({ ...formData, fullName: e.target.value })
                                     }
                                     placeholder="John Doe"
                                 />
@@ -285,8 +285,8 @@ export default function UserManagement() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="owner">Owner</SelectItem>
-                                        <SelectItem value="admin">Admin</SelectItem>
+                                        <SelectItem value="restaurant_owner">Owner</SelectItem>
+                                        <SelectItem value="restaurant_admin">Admin</SelectItem>
                                         <SelectItem value="waiter">Waiter</SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -313,15 +313,15 @@ export default function UserManagement() {
                 {users.map((user, index) => (
                     <motion.div key={user._id || user.id} variants={staggerItem}>
                         <Card>
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between">
+                            <CardContent className="p-4 sm:p-6">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-2">
+                                        <div className="flex flex-wrap items-center gap-2 mb-2">
                                             <h4 className="font-semibold text-lg">
                                                 {user.full_name || user.fullName}
                                             </h4>
                                             <Badge variant={getRoleBadgeVariant(user.role)}>
-                                                {user.role}
+                                                {user.role?.replace('_', ' ')}
                                             </Badge>
                                             {user.isOnline ? (
                                                 <Badge className="bg-green-500 hover:bg-green-600">
@@ -338,7 +338,7 @@ export default function UserManagement() {
                                                 <Badge variant="destructive">Inactive</Badge>
                                             )}
                                         </div>
-                                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                                        <p className="text-sm text-muted-foreground break-all">{user.email}</p>
                                         {(user.last_login || user.lastLogin) && (
                                             <p className="text-xs text-muted-foreground mt-1">
                                                 Last login:{" "}
@@ -353,8 +353,8 @@ export default function UserManagement() {
                                             </p>
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        {user.role !== "superadmin" && user.role !== "owner" && (
+                                    <div className="flex items-center gap-2 self-end sm:self-center">
+                                        {user.role !== "superadmin" && user.role !== "owner" && user.role !== "restaurant_owner" && (
                                             <>
                                                 <Button
                                                     variant="outline"
@@ -413,9 +413,9 @@ export default function UserManagement() {
                         <div>
                             <Label>Full Name</Label>
                             <Input
-                                value={formData.full_name}
+                                value={formData.fullName}
                                 onChange={(e) =>
-                                    setFormData({ ...formData, full_name: e.target.value })
+                                    setFormData({ ...formData, fullName: e.target.value })
                                 }
                             />
                         </div>
@@ -446,8 +446,8 @@ export default function UserManagement() {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="owner">Owner</SelectItem>
-                                    <SelectItem value="admin">Admin</SelectItem>
+                                    <SelectItem value="restaurant_owner">Owner</SelectItem>
+                                    <SelectItem value="restaurant_admin">Admin</SelectItem>
                                     <SelectItem value="waiter">Waiter</SelectItem>
                                 </SelectContent>
                             </Select>

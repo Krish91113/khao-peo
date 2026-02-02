@@ -8,6 +8,9 @@ import orderRoutes from "./routes/order.routes.js";
 import billRoutes from "./routes/bill.routes.js";
 import superadminRoutes from "./routes/superadmin.routes.js";
 import servedOrderRoutes from "./routes/servedOrder.routes.js";
+import platformRoutes from "./routes/platform.routes.js";
+import menuRoutes from "./routes/menu.routes.js";
+import restaurantRoutes from "./routes/restaurant.routes.js";
 // import path from "path"
 
 const app = express();
@@ -48,6 +51,9 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/bills", billRoutes);
 app.use("/api/superadmin", superadminRoutes);
 app.use("/api/served-orders", servedOrderRoutes);
+app.use("/api/platform", platformRoutes);
+app.use("/api/menu", menuRoutes);
+app.use("/api/restaurant", restaurantRoutes);
 
 // Global error handler fallback
 app.use((err, req, res, next) => {

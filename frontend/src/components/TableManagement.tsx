@@ -5,6 +5,7 @@ import { ordersAPI } from "@/api/orders";
 import { billsAPI } from "@/api/bills";
 import { kotAPI } from "@/api/kot";
 import { servedOrdersAPI } from "@/api/servedOrders";
+import { restaurantAPI } from "@/api/restaurant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,16 +57,18 @@ const TableManagementEnhanced = ({ onTableSelect, onResetTable, onGenerateKOT }:
   const [tableNumberFilter, setTableNumberFilter] = useState<string>("");
   const [reprintBillData, setReprintBillData] = useState<any>(null);
   const [showReprintBill, setShowReprintBill] = useState(false);
+  const [restaurantName, setRestaurantName] = useState<string>("");
 
   // Get user role to check if admin
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
-  const isAdmin = user?.role === 'admin' || user?.role === 'owner' || user?.role === 'superadmin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'owner' || user?.role === 'superadmin' || user?.role === 'restaurant_owner' || user?.role === 'restaurant_admin' || user?.role === 'platform_superadmin';
 
   useEffect(() => {
     fetchTables();
     fetchOrders();
     fetchServedOrders();
+    fetchRestaurantDetails();
 
     // Poll for updates every 3 seconds
     const interval = setInterval(() => {
@@ -83,6 +86,15 @@ const TableManagementEnhanced = ({ onTableSelect, onResetTable, onGenerateKOT }:
   useEffect(() => {
     fetchServedOrders();
   }, [tableNumberFilter]);
+
+  const fetchRestaurantDetails = async () => {
+    try {
+      const details = await restaurantAPI.getMyRestaurant();
+      setRestaurantName(details.name);
+    } catch (error) {
+      console.error("Failed to fetch restaurant details:", error);
+    }
+  };
 
   const fetchTables = async () => {
     try {
@@ -603,6 +615,7 @@ const TableManagementEnhanced = ({ onTableSelect, onResetTable, onGenerateKOT }:
             fetchTables();
             fetchOrders();
           }}
+          restaurantName={restaurantName}
         />
       )}
 
@@ -642,6 +655,7 @@ const TableManagementEnhanced = ({ onTableSelect, onResetTable, onGenerateKOT }:
             setShowReprintBill(false);
             setReprintBillData(null);
           }}
+          restaurantName={restaurantName}
         />
       )}
     </div>

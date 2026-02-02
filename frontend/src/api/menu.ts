@@ -7,7 +7,7 @@ export interface MenuItem {
     category: string;
     price: number;
     description?: string;
-    available: boolean;
+    isAvailable: boolean;
 }
 
 export const menuAPI = {
@@ -34,9 +34,5 @@ export const menuAPI = {
     delete: async (id: string): Promise<void> => {
         await apiClient.delete(`/menu/${id}`);
     },
-
-    toggleAvailability: async (id: string): Promise<MenuItem> => {
-        const response = await apiClient.patch<MenuItem>(`/menu/${id}/toggle-availability`);
-        return response.data;
-    },
 };
+

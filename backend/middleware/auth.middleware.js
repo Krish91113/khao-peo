@@ -22,6 +22,13 @@ export const protect = async (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ message: "User not found" });
     }
+
+    // Attach restaurantId to request object for easy access in controllers
+    // For platform_superadmin, this might be null or undefined
+    if (req.user.restaurantId) {
+      req.restaurantId = req.user.restaurantId;
+    }
+
     next();
   } catch (error) {
     console.error("JWT verification failed:", error.message);

@@ -9,7 +9,7 @@ import { ServedOrder } from "../models/ServedOrder.model.js";
 export const getTableById = async (req, res) => {
   try {
     const { id } = req.params;
-    const table = await Table.findById(id).lean();
+    const table = await Table.findOne({ _id: id, restaurantId: req.restaurantId }).lean();
     if (!table) {
       return res.status(404).json({ message: "Table not found" });
     }
@@ -35,7 +35,7 @@ export const getTableById = async (req, res) => {
 // @access  Protected (owner/admin)
 export const getTables = async (req, res) => {
   try {
-    const tables = await Table.find().sort({ tableNumber: 1 }).lean();
+    const tables = await Table.find({ restaurantId: req.restaurantId }).sort({ tableNumber: 1 }).lean();
     // Transform to match frontend expectations
     const transformed = tables.map(table => ({
       _id: table._id,
@@ -65,7 +65,11 @@ export const updateTableStatus = async (req, res) => {
       currentOrder: currentOrderId || null,
     };
 
-    const table = await Table.findByIdAndUpdate(id, update, { new: true });
+    const table = await Table.findOneAndUpdate(
+      { _id: id, restaurantId: req.restaurantId },
+      update,
+      { new: true }
+    );
     if (!table) {
       return res.status(404).json({ message: "Table not found" });
     }
@@ -94,7 +98,7 @@ export const resetTable = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const table = await Table.findById(id);
+    const table = await Table.findOne({ _id: id, restaurantId: req.restaurantId });
     if (!table) {
       return res.status(404).json({ message: "Table not found" });
     }
@@ -141,20 +145,21 @@ export const resetTable = async (req, res) => {
           createdAt: latestBill.createdAt,
         } : null,
         servedBy: req.user._id,
+        restaurantId: req.restaurantId,
       };
 
       await ServedOrder.create(servedOrderData);
-      
+
     }
 
     // Delete ALL orders associated with this table (not just current order)
     // This ensures a fresh start for the next customer
     const deleteOrdersResult = await Order.deleteMany({ table: table._id });
-  
+
 
     // Delete ALL bills associated with this table
     const deleteBillsResult = await Bill.deleteMany({ table: table._id });
-    
+
 
     // Reset table status
     table.isBooked = false;
@@ -185,14 +190,15 @@ export const createTable = async (req, res) => {
   try {
     const { tableNumber, capacity } = req.body;
 
-    const existing = await Table.findOne({ tableNumber });
+    const existing = await Table.findOne({ tableNumber, restaurantId: req.restaurantId });
     if (existing) {
-      return res.status(400).json({ message: "Table number already exists" });
+      return res.status(400).json({ message: "Table number already exists in this restaurant" });
     }
 
     const table = await Table.create({
       tableNumber,
       capacity: capacity || 4,
+      restaurantId: req.restaurantId,
     });
 
     // Transform to match frontend expectations

@@ -7,9 +7,32 @@ import { toast } from "sonner";
 interface BillDisplayProps {
   bill: any;
   onClose: () => void;
+  restaurantName?: string;
 }
 
-const BillDisplay = ({ bill, onClose }: BillDisplayProps) => {
+const BillDisplay = ({ bill, onClose, restaurantName }: BillDisplayProps) => {
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString("en-IN", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  };
+
+  // Handle different bill data structures
+  const tableNumber = bill?.table?.table_number || bill?.tableNumber || 'N/A';
+  const billId = bill?.id || bill?._id || 'N/A';
+  const createdAt = bill?.created_at || bill?.createdAt || bill?.servedAt || new Date().toISOString();
+  const orderId = bill?.order_id || bill?.orderId || billId;
+
+  // Handle items array - could be in different formats
+  const items = bill?.items || bill?.billDetails?.items || [];
+
+  // Handle totals - with fallbacks for different structures
+  const subtotal = bill?.subtotal || bill?.billDetails?.subtotal || 0;
+  const tax = bill?.tax || bill?.billDetails?.tax || 0;
+  const totalAmount = bill?.total_amount || bill?.totalAmount || bill?.totalBillAmount || bill?.billDetails?.total_amount || 0;
+
   const handlePrintCustomer = () => {
     // Print only customer receipt
     const printContent = document.getElementById('customer-receipt');
@@ -92,35 +115,13 @@ const BillDisplay = ({ bill, onClose }: BillDisplayProps) => {
     toast.success("Kitchen ticket printed!");
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-IN", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-  };
-
-  // Handle different bill data structures
-  const tableNumber = bill?.table?.table_number || bill?.tableNumber || 'N/A';
-  const billId = bill?.id || bill?._id || 'N/A';
-  const createdAt = bill?.created_at || bill?.createdAt || bill?.servedAt || new Date().toISOString();
-  const orderId = bill?.order_id || bill?.orderId || billId;
-
-  // Handle items array - could be in different formats
-  const items = bill?.items || bill?.billDetails?.items || [];
-
-  // Handle totals - with fallbacks for different structures
-  const subtotal = bill?.subtotal || bill?.billDetails?.subtotal || 0;
-  const tax = bill?.tax || bill?.billDetails?.tax || 0;
-  const totalAmount = bill?.total_amount || bill?.totalAmount || bill?.totalBillAmount || bill?.billDetails?.total_amount || 0;
-
-
   return (
     <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 animate-fade-in px-2 sm:px-4">
       {/* Customer Receipt */}
       <Card id="customer-receipt" className="print:shadow-none border-2">
         <CardHeader className="text-center border-b-2 bg-gradient-to-r from-orange-50 to-red-50">
           <div className="space-y-3">
-            <CardTitle className="text-4xl font-bold tracking-tight">KHAO PEEO</CardTitle>
+            <CardTitle className="text-4xl font-bold tracking-tight">{restaurantName || "KHAO PEEO"}</CardTitle>
             <div className="h-px bg-gradient-to-r from-transparent via-primary to-transparent"></div>
             <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Customer Receipt</p>
             <p className="text-xs text-muted-foreground font-mono">

@@ -28,5 +28,10 @@ export const tablesAPI = {
     const response = await apiClient.put<Table>(`/tables/${id}/reset`, {});
     return response.data;
   },
+
+  create: async (data: { tableNumber: number; capacity?: number }): Promise<Table> => {
+    const response = await apiClient.post<Table>('/tables', data);
+    return response.data;
+  },
 };
 

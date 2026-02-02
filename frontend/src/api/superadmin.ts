@@ -47,4 +47,43 @@ export const superadminAPI = {
         );
         return response.data;
     },
+
+    // Create new user
+    createUser: async (data: any) => {
+        const response = await axios.post(
+            `${API_URL}/superadmin/users`,
+            data,
+            getAuthHeaders()
+        );
+        return response.data;
+    },
+
+    // Update user
+    updateUser: async (id: string, data: any) => {
+        const response = await axios.put(
+            `${API_URL}/superadmin/users/${id}`,
+            data,
+            getAuthHeaders()
+        );
+        return response.data;
+    },
+
+    // Delete user
+    deleteUser: async (id: string) => {
+        const response = await axios.delete(
+            `${API_URL}/superadmin/users/${id}`,
+            getAuthHeaders()
+        );
+        return response.data;
+    },
+
+    // Toggle user status
+    toggleUserStatus: async (id: string) => {
+        const response = await axios.patch(
+            `${API_URL}/superadmin/users/${id}/toggle-status`,
+            {},
+            getAuthHeaders()
+        );
+        return response.data;
+    },
 };

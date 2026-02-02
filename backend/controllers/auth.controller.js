@@ -25,7 +25,7 @@ export const register = async (req, res) => {
       fullName,
       email,
       password: hashedPassword,
-      role: role || "admin",
+      role: role || "restaurant_admin",
     });
 
     const token = generateToken(user);
@@ -80,6 +80,7 @@ export const login = async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         role: user.role,
+        restaurantId: user.restaurantId,
         isOnline: user.isOnline,
         lastLogin: user.lastLogin,
       },

@@ -12,7 +12,7 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Table and items are required" });
     }
 
-    const table = await Table.findById(table_id);
+    const table = await Table.findOne({ _id: table_id, restaurantId: req.restaurantId });
     if (!table) {
       return res.status(404).json({ message: "Table not found" });
     }
@@ -36,6 +36,7 @@ export const createOrder = async (req, res) => {
       totalAmount: total_amount,
       status: "sent_to_kitchen",
       createdBy: req.user._id,
+      restaurantId: req.restaurantId,
     });
 
     // Update table's currentOrder to the latest order
@@ -67,7 +68,7 @@ export const createOrder = async (req, res) => {
 export const getOrdersByTable = async (req, res) => {
   try {
     const { tableId } = req.params;
-    const orders = await Order.find({ table: tableId })
+    const orders = await Order.find({ table: tableId, restaurantId: req.restaurantId })
       .populate("table", "tableNumber")
       .sort({ createdAt: -1 });
     return res.json(orders);
@@ -90,8 +91,8 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(400).json({ message: "Invalid status" });
     }
 
-    const order = await Order.findByIdAndUpdate(
-      id,
+    const order = await Order.findOneAndUpdate(
+      { _id: id, restaurantId: req.restaurantId },
       { status },
       { new: true }
     );
@@ -112,7 +113,8 @@ export const updateOrderStatus = async (req, res) => {
 export const getAllOrders = async (req, res) => {
   try {
     const { status } = req.query;
-    const query = status ? { status } : {};
+    const query = { restaurantId: req.restaurantId };
+    if (status) query.status = status;
     const orders = await Order.find(query)
       .populate("table", "tableNumber")
       .sort({ createdAt: -1 });

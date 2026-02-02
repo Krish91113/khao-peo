@@ -51,7 +51,7 @@ export default function FoodMenuManagement() {
         category: "Main Course",
         price: 0,
         description: "",
-        available: true,
+        isAvailable: true,
     });
 
     const { data: menuItems = [], isLoading } = useQuery({
@@ -99,7 +99,8 @@ export default function FoodMenuManagement() {
     });
 
     const toggleAvailabilityMutation = useMutation({
-        mutationFn: menuAPI.toggleAvailability,
+        mutationFn: ({ id, isAvailable }: { id: string; isAvailable: boolean }) =>
+            menuAPI.update(id, { isAvailable }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["menu"] });
             toast.success("Availability updated");
@@ -115,7 +116,7 @@ export default function FoodMenuManagement() {
             category: "Main Course",
             price: 0,
             description: "",
-            available: true,
+            isAvailable: true,
         });
     };
 
@@ -134,7 +135,7 @@ export default function FoodMenuManagement() {
             category: item.category,
             price: item.price,
             description: item.description || "",
-            available: item.available,
+            isAvailable: item.isAvailable,
         });
         setIsEditDialogOpen(true);
     };
@@ -284,7 +285,7 @@ export default function FoodMenuManagement() {
                                                 {item.category}
                                             </Badge>
                                         </div>
-                                        {!item.available && (
+                                        {!item.isAvailable && (
                                             <Badge variant="destructive">Unavailable</Badge>
                                         )}
                                     </div>
@@ -309,13 +310,16 @@ export default function FoodMenuManagement() {
                                                 variant="outline"
                                                 size="sm"
                                                 onClick={() =>
-                                                    toggleAvailabilityMutation.mutate(item._id || item.id || "")
+                                                    toggleAvailabilityMutation.mutate({
+                                                        id: item._id || item.id || "",
+                                                        isAvailable: !item.isAvailable
+                                                    })
                                                 }
                                             >
-                                                {item.available ? (
-                                                    <PowerOff className="h-4 w-4 text-destructive" />
-                                                ) : (
+                                                {item.isAvailable ? (
                                                     <Power className="h-4 w-4 text-success" />
+                                                ) : (
+                                                    <PowerOff className="h-4 w-4 text-destructive" />
                                                 )}
                                             </Button>
                                             <Button

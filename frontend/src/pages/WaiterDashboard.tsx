@@ -79,7 +79,7 @@ const WaiterDashboard = () => {
     try {
       const user = JSON.parse(userStr);
       // Allow waiter, admin, and owner roles
-      if (!["waiter", "admin", "owner"].includes(user.role)) {
+      if (!["waiter", "admin", "owner", "restaurant_admin", "restaurant_owner"].includes(user.role)) {
         toast.error("Access denied. Waiter role required.");
         navigate("/");
         return;

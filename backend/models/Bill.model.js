@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const billSchema = new mongoose.Schema(
   {
+    restaurantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Restaurant",
+      required: true,
+    },
     order: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",

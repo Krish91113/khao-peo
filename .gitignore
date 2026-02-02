@@ -39,6 +39,10 @@ Thumbs.db
 PRODUCTION_SETUP.md
 CREDENTIALS.txt
 backend/createSuperAdmin.js
+*.zip
+*.tar
+*.gz
+.git.zip
 
 # Artifacts (brain folder)
 .gemini/

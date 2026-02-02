@@ -21,7 +21,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<"owner" | "admin" | "waiter">("admin");
+  const [role, setRole] = useState<string>("restaurant_admin");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -46,21 +46,23 @@ const Auth = () => {
       if (isLogin) {
         // Login
         const response = await authAPI.login({ email, password });
-        
+
         // Store token and user data
         localStorage.setItem('token', response.token);
         localStorage.setItem('user', JSON.stringify(response.user));
 
-          toast.success("Signed in successfully!");
-          
+        toast.success("Signed in successfully!");
+
         // Navigate based on role
         const userRole = response.user.role;
-          if (userRole === "owner") {
-            navigate("/owner-dashboard");
-          } else if (userRole === "waiter") {
-            navigate("/waiter-dashboard");
-          } else {
-            navigate("/admin-dashboard");
+        if (userRole === "platform_superadmin") {
+          navigate("/platform-dashboard");
+        } else if (userRole === "owner" || userRole === "restaurant_owner") {
+          navigate("/owner-dashboard");
+        } else if (userRole === "waiter") {
+          navigate("/waiter-dashboard");
+        } else {
+          navigate("/admin-dashboard");
         }
       } else {
         // Register
@@ -75,22 +77,24 @@ const Auth = () => {
         localStorage.setItem('token', response.token);
         localStorage.setItem('user', JSON.stringify(response.user));
 
-          toast.success("Account created successfully!");
-          
+        toast.success("Account created successfully!");
+
         // Navigate based on role
         const userRole = response.user.role;
-            if (userRole === "owner") {
-              navigate("/owner-dashboard");
-            } else if (userRole === "waiter") {
-              navigate("/waiter-dashboard");
-            } else {
-              navigate("/admin-dashboard");
+        if (userRole === "platform_superadmin") {
+          navigate("/platform-dashboard");
+        } else if (userRole === "owner" || userRole === "restaurant_owner") {
+          navigate("/owner-dashboard");
+        } else if (userRole === "waiter") {
+          navigate("/waiter-dashboard");
+        } else {
+          navigate("/admin-dashboard");
         }
       }
     } catch (error: any) {
       console.error("Auth error:", error);
       const errorMessage = error.response?.data?.message || error.message || "An error occurred";
-      
+
       if (error.response?.status === 401) {
         toast.error("Invalid email or password");
       } else if (error.response?.status === 409) {
@@ -165,17 +169,17 @@ const Auth = () => {
             {!isLogin && (
               <div className="space-y-3">
                 <Label>Select Your Role</Label>
-                <RadioGroup value={role} onValueChange={(value: "owner" | "admin" | "waiter") => setRole(value)}>
+                <RadioGroup value={role} onValueChange={(value: string) => setRole(value)}>
                   <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer">
-                    <RadioGroupItem value="owner" id="owner" />
-                    <Label htmlFor="owner" className="flex-1 cursor-pointer">
+                    <RadioGroupItem value="restaurant_owner" id="restaurant_owner" />
+                    <Label htmlFor="restaurant_owner" className="flex-1 cursor-pointer">
                       <div className="font-semibold">Owner</div>
                       <div className="text-xs text-muted-foreground">Full access to all features and admin management</div>
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer">
-                    <RadioGroupItem value="admin" id="admin" />
-                    <Label htmlFor="admin" className="flex-1 cursor-pointer">
+                    <RadioGroupItem value="restaurant_admin" id="restaurant_admin" />
+                    <Label htmlFor="restaurant_admin" className="flex-1 cursor-pointer">
                       <div className="font-semibold">Admin</div>
                       <div className="text-xs text-muted-foreground">Manage tables, orders, and billing (POS)</div>
                     </Label>

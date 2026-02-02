@@ -14,8 +14,8 @@ export const createBill = async (req, res) => {
     }
 
     const [order, table] = await Promise.all([
-      Order.findById(order_id),
-      Table.findById(table_id),
+      Order.findOne({ _id: order_id, restaurantId: req.restaurantId }),
+      Table.findOne({ _id: table_id, restaurantId: req.restaurantId }),
     ]);
 
     if (!order || !table) {
@@ -28,7 +28,9 @@ export const createBill = async (req, res) => {
       subtotal,
       tax,
       totalAmount: total_amount,
+      totalAmount: total_amount,
       paymentStatus: "pending",
+      restaurantId: req.restaurantId,
     });
 
     // Transform bill to match frontend expectations
@@ -62,7 +64,7 @@ export const createFinalBill = async (req, res) => {
   try {
     const { tableId } = req.params;
 
-    const table = await Table.findById(tableId);
+    const table = await Table.findOne({ _id: tableId, restaurantId: req.restaurantId });
     if (!table) {
       return res.status(404).json({ message: "Table not found" });
     }
@@ -71,6 +73,7 @@ export const createFinalBill = async (req, res) => {
     // Exclude "served" status to avoid including orders from previous sessions
     const orders = await Order.find({
       table: table._id,
+      restaurantId: req.restaurantId,
       status: { $in: ["sent_to_kitchen", "preparing", "ready", "pending"] }
     }).sort({ createdAt: 1 });
 
@@ -109,7 +112,9 @@ export const createFinalBill = async (req, res) => {
       subtotal: totalSubtotal,
       tax,
       totalAmount,
+      totalAmount,
       paymentStatus: "pending",
+      restaurantId: req.restaurantId,
     });
 
     // Transform bill to match frontend expectations
@@ -143,7 +148,7 @@ export const createFinalBill = async (req, res) => {
 // @access  Protected (owner/admin)
 export const getAllBills = async (req, res) => {
   try {
-    const bills = await Bill.find()
+    const bills = await Bill.find({ restaurantId: req.restaurantId })
       .populate("order")
       .populate("table", "tableNumber")
       .sort({ createdAt: -1 });
@@ -173,7 +178,7 @@ export const getAllBills = async (req, res) => {
 export const getBillByOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const bill = await Bill.findOne({ order: orderId })
+    const bill = await Bill.findOne({ order: orderId, restaurantId: req.restaurantId })
       .populate("order")
       .populate("table", "tableNumber");
     if (!bill) {

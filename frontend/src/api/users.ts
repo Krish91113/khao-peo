@@ -6,7 +6,7 @@ export interface User {
     email: string;
     full_name: string;
     fullName?: string;
-    role: 'owner' | 'admin' | 'waiter' | 'superadmin';
+    role: 'owner' | 'admin' | 'waiter' | 'superadmin' | 'restaurant_owner' | 'restaurant_admin' | 'platform_superadmin' | string;
     is_active?: boolean;
     isActive?: boolean;
     isOnline?: boolean;
@@ -32,7 +32,7 @@ export const usersAPI = {
         email: string;
         password: string;
         full_name: string;
-        role: 'admin' | 'waiter' | 'owner';
+        role: 'admin' | 'waiter' | 'owner' | 'restaurant_owner' | 'restaurant_admin' | string;
     }): Promise<User> => {
         const response = await apiClient.post<User>('/users', data);
         return response.data;
