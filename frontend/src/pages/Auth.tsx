@@ -115,7 +115,11 @@ const Auth = () => {
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
             <div className="h-16 w-16 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center">
-              <UtensilsCrossed className="h-8 w-8 text-white" />
+              <img
+                src="/KhaoPeeo Logo.png"
+                alt="Khao Peeo Logo"
+                className="h-16 w-auto object-contain brightness-0 invert"
+              />
             </div>
           </div>
           <div className="text-center">

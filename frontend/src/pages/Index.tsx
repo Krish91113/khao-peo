@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
-import { SmoothCursor } from "@/components/ui/smooth-cursor";
+
 import ScrollBaseAnimation from "@/components/ui/scroll-text-marquee";
 
 // Restaurant data for the trusted section
@@ -345,16 +345,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
-      {/* Custom Smooth Cursor - Only on Desktop */}
-      {!isMobile && (
-        <SmoothCursor
-          color="#ea580c"
-          size={25}
-          rotateOnMove={true}
-          scaleOnClick={true}
-          glowEffect={true}
-        />
-      )}
+      {/* Removed smooth cursor as per user request */}
 
       {/* Navbar */}
       <motion.nav
@@ -365,10 +356,11 @@ const Index = () => {
       >
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-10 w-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
-              <UtensilsCrossed className="h-6 w-6 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">KHAO PEEO</h1>
+            <img
+              src="/KhaoPeeo Logo.png"
+              alt="Khao Peeo Logo"
+              className="h-12 w-auto object-contain"
+            />
           </div>
 
           <div className="hidden lg:flex items-center gap-8">
@@ -1031,11 +1023,12 @@ const Index = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <div className="flex items-center gap-2 mb-4">
-                <div className="h-10 w-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
-                  <UtensilsCrossed className="h-6 w-6 text-white" />
-                </div>
-                <span className="text-xl font-bold text-white">KHAO PEEO</span>
+              <div className="flex items-center gap-2 mb-6">
+                <img
+                  src="/KhaoPeeo Logo.png"
+                  alt="Khao Peeo Logo"
+                  className="h-16 w-auto object-contain brightness-0 invert"
+                />
               </div>
               <p className="text-gray-400 mb-6 leading-relaxed">
                 India's leading restaurant POS & billing software. Trusted by 5,000+ restaurants for GST-compliant billing, order management, and business growth.
