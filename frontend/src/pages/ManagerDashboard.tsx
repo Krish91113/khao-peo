@@ -15,7 +15,7 @@ import KOTReceipt from "@/components/KOTReceipt";
 import { pageTransitionConfig } from "@/lib/animations";
 import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates";
 
-const AdminDashboard = () => {
+const ManagerDashboard = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [selectedTable, setSelectedTable] = useState<any>(null);
@@ -110,7 +110,7 @@ const AdminDashboard = () => {
             <UtensilsCrossed className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
             <div className="min-w-0">
               <h1 className="text-sm sm:text-xl font-bold truncate">KHAO PEEO</h1>
-              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Admin Dashboard</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Manager Dashboard</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-4">
@@ -131,7 +131,7 @@ const AdminDashboard = () => {
             )}
             <ThemeToggle />
             <div className="text-right hidden lg:block">
-              <p className="text-sm font-medium">{profile?.full_name || "Admin"}</p>
+              <p className="text-sm font-medium">{profile?.full_name || "Manager"}</p>
               <p className="text-xs text-muted-foreground capitalize">{profile?.role}</p>
             </div>
             <Button variant="outline" size="sm" onClick={handleSignOut} className="h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-4">
@@ -196,5 +196,5 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default ManagerDashboard;
 

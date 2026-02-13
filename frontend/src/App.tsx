@@ -9,7 +9,7 @@ import Auth from "./pages/Auth";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import OwnerDashboard from "./pages/OwnerDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
+import ManagerDashboard from "./pages/ManagerDashboard";
 import WaiterDashboard from "./pages/WaiterDashboard";
 import KitchenDisplay from "./pages/KitchenDisplay";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
@@ -31,7 +31,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/owner-dashboard" element={<OwnerDashboard />} />
-            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/manager-dashboard" element={<ManagerDashboard />} />
             <Route path="/waiter-dashboard" element={<WaiterDashboard />} />
             <Route path="/kitchen-display" element={<KitchenDisplay />} />
             <Route path="/superadmin-dashboard" element={<SuperAdminDashboard />} />

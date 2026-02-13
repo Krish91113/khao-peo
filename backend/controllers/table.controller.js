@@ -190,6 +190,10 @@ export const createTable = async (req, res) => {
   try {
     const { tableNumber, capacity } = req.body;
 
+    if (!req.restaurantId) {
+      return res.status(400).json({ message: "User is not associated with any restaurant" });
+    }
+
     const existing = await Table.findOne({ tableNumber, restaurantId: req.restaurantId });
     if (existing) {
       return res.status(400).json({ message: "Table number already exists in this restaurant" });

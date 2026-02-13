@@ -192,7 +192,7 @@ const OrderEntry = ({ table, onComplete }: OrderEntryProps) => {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Table is Booked</AlertTitle>
             <AlertDescription>
-              This table is currently booked. You can add more items to the existing order. Admin can generate the final bill when ready.
+              This table is currently booked. You can add more items to the existing order. Manager can generate the final bill when ready.
             </AlertDescription>
           </Alert>
         </div>

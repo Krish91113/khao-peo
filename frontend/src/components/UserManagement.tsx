@@ -190,7 +190,7 @@ export default function UserManagement() {
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium flex items-center gap-2">
                             <Shield className="h-4 w-4" />
-                            Admins
+                            Managers
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -224,7 +224,7 @@ export default function UserManagement() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h3 className="text-2xl font-bold">User Management</h3>
-                    <p className="text-muted-foreground">Manage admin and waiter accounts</p>
+                    <p className="text-muted-foreground">Manage manager and waiter accounts</p>
                 </div>
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                     <DialogTrigger asChild>
@@ -237,7 +237,7 @@ export default function UserManagement() {
                         <DialogHeader>
                             <DialogTitle>Create New User</DialogTitle>
                             <DialogDescription>
-                                Add a new admin or waiter account to the system
+                                Add a new manager or waiter account to the system
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
@@ -286,7 +286,7 @@ export default function UserManagement() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="restaurant_owner">Owner</SelectItem>
-                                        <SelectItem value="restaurant_admin">Admin</SelectItem>
+                                        <SelectItem value="restaurant_admin">Manager</SelectItem>
                                         <SelectItem value="waiter">Waiter</SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -447,7 +447,7 @@ export default function UserManagement() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="restaurant_owner">Owner</SelectItem>
-                                    <SelectItem value="restaurant_admin">Admin</SelectItem>
+                                    <SelectItem value="restaurant_admin">Manager</SelectItem>
                                     <SelectItem value="waiter">Waiter</SelectItem>
                                 </SelectContent>
                             </Select>

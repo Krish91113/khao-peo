@@ -62,7 +62,7 @@ const Auth = () => {
         } else if (userRole === "waiter") {
           navigate("/waiter-dashboard");
         } else {
-          navigate("/admin-dashboard");
+          navigate("/manager-dashboard");
         }
       } else {
         // Register
@@ -88,7 +88,7 @@ const Auth = () => {
         } else if (userRole === "waiter") {
           navigate("/waiter-dashboard");
         } else {
-          navigate("/admin-dashboard");
+          navigate("/manager-dashboard");
         }
       }
     } catch (error: any) {
@@ -184,7 +184,7 @@ const Auth = () => {
                   <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer">
                     <RadioGroupItem value="restaurant_admin" id="restaurant_admin" />
                     <Label htmlFor="restaurant_admin" className="flex-1 cursor-pointer">
-                      <div className="font-semibold">Admin</div>
+                      <div className="font-semibold">Manager</div>
                       <div className="text-xs text-muted-foreground">Manage tables, orders, and billing (POS)</div>
                     </Label>
                   </div>

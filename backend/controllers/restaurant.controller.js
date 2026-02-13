@@ -11,7 +11,7 @@ export const getMyRestaurant = async (req, res) => {
             return res.status(400).json({ message: "No restaurant ID associated with this user" });
         }
 
-        const restaurant = await Restaurant.findOne({ restaurantId });
+        const restaurant = await Restaurant.findById(restaurantId);
 
         if (!restaurant) {
             return res.status(404).json({ message: "Restaurant not found" });
