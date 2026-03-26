@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -13,15 +12,11 @@ import { z } from "zod";
 const authSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  fullName: z.string().min(2, "Name must be at least 2 characters").optional(),
 });
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<string>("restaurant_admin");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -30,12 +25,7 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      // Validate input
-      const validation = authSchema.safeParse({
-        email,
-        password,
-        fullName: !isLogin ? fullName : undefined,
-      });
+      const validation = authSchema.safeParse({ email, password });
 
       if (!validation.success) {
         toast.error(validation.error.errors[0].message);
@@ -43,70 +33,40 @@ const Auth = () => {
         return;
       }
 
-      if (isLogin) {
-        // Login
-        const response = await authAPI.login({ email, password });
+      const response = await authAPI.login({ email, password });
 
-        // Store token and user data
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
 
-        toast.success("Signed in successfully!");
+      toast.success("Signed in successfully!");
 
-        // Navigate based on role
-        const userRole = response.user.role;
-        if (userRole === "platform_superadmin") {
-          navigate("/platform-dashboard");
-        } else if (userRole === "owner" || userRole === "restaurant_owner") {
-          navigate("/owner-dashboard");
-        } else if (userRole === "waiter") {
-          navigate("/waiter-dashboard");
-        } else {
-          navigate("/manager-dashboard");
-        }
+      const userRole = response.user.role;
+      if (userRole === "platform_superadmin") {
+        navigate("/platform-dashboard");
+      } else if (userRole === "owner" || userRole === "restaurant_owner") {
+        navigate("/owner-dashboard");
+      } else if (userRole === "waiter") {
+        navigate("/waiter-dashboard");
       } else {
-        // Register
-        const response = await authAPI.register({
-          email,
-          password,
-          fullName,
-          role,
-        });
-
-        // Store token and user data
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
-
-        toast.success("Account created successfully!");
-
-        // Navigate based on role
-        const userRole = response.user.role;
-        if (userRole === "platform_superadmin") {
-          navigate("/platform-dashboard");
-        } else if (userRole === "owner" || userRole === "restaurant_owner") {
-          navigate("/owner-dashboard");
-        } else if (userRole === "waiter") {
-          navigate("/waiter-dashboard");
-        } else {
-          navigate("/manager-dashboard");
-        }
+        navigate("/manager-dashboard");
       }
     } catch (error: any) {
       console.error("Auth error:", error);
-      const errorMessage = error.response?.data?.message || error.message || "An error occurred";
-
       if (error.response?.status === 401) {
         toast.error("Invalid email or password");
-      } else if (error.response?.status === 409) {
-        toast.error("This email is already registered. Please sign in instead.");
       } else if (error.message?.includes("fetch") || error.message?.includes("Network")) {
-        toast.error("Connection error. Please check:\n1. Your internet connection\n2. Backend server is running\n3. Browser console for details");
+        toast.error("Connection error. Please check your internet connection.");
       } else {
-        toast.error(errorMessage);
+        toast.error(error.response?.data?.message || error.message || "An error occurred");
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSignUpRedirect = () => {
+    // Open WhatsApp to contact Khao Peeo for account creation
+    window.open("https://wa.me/919152515229", "_blank");
   };
 
   return (
@@ -123,31 +83,14 @@ const Auth = () => {
             </div>
           </div>
           <div className="text-center">
-            <CardTitle className="text-3xl font-bold">
-              {isLogin ? "Welcome Back" : "Create Account"}
-            </CardTitle>
+            <CardTitle className="text-3xl font-bold">Welcome Back</CardTitle>
             <CardDescription className="text-base">
-              {isLogin
-                ? "Sign in to manage your restaurant"
-                : "Sign up to get started with KHAO PEEO"}
+              Sign in to manage your restaurant
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-4">
-            {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="John Doe"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                />
-              </div>
-            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -170,51 +113,35 @@ const Auth = () => {
                 required
               />
             </div>
-            {!isLogin && (
-              <div className="space-y-3">
-                <Label>Select Your Role</Label>
-                <RadioGroup value={role} onValueChange={(value: string) => setRole(value)}>
-                  <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer">
-                    <RadioGroupItem value="restaurant_owner" id="restaurant_owner" />
-                    <Label htmlFor="restaurant_owner" className="flex-1 cursor-pointer">
-                      <div className="font-semibold">Owner</div>
-                      <div className="text-xs text-muted-foreground">Full access to all features and admin management</div>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer">
-                    <RadioGroupItem value="restaurant_admin" id="restaurant_admin" />
-                    <Label htmlFor="restaurant_admin" className="flex-1 cursor-pointer">
-                      <div className="font-semibold">Manager</div>
-                      <div className="text-xs text-muted-foreground">Manage tables, orders, and billing (POS)</div>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer">
-                    <RadioGroupItem value="waiter" id="waiter" />
-                    <Label htmlFor="waiter" className="flex-1 cursor-pointer">
-                      <div className="font-semibold">Waiter</div>
-                      <div className="text-xs text-muted-foreground">Monitor orders and serve customers</div>
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-            )}
             <Button
               type="submit"
               className="w-full bg-primary hover:bg-primary/90"
               disabled={loading}
             >
-              {loading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
+              {loading ? "Please wait..." : "Sign In"}
             </Button>
           </form>
           <div className="mt-6 text-center">
+            <p className="text-sm text-muted-foreground mb-2">
+              Don't have an account?
+            </p>
             <button
               type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-primary hover:underline"
+              onClick={handleSignUpRedirect}
+              className="text-sm text-primary hover:underline font-medium flex items-center justify-center gap-2 mx-auto"
             >
-              {isLogin
-                ? "Don't have an account? Sign up"
-                : "Already have an account? Sign in"}
+              {/* WhatsApp icon SVG */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="text-green-500"
+              >
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+              </svg>
+              Contact us on WhatsApp to Sign Up
             </button>
           </div>
         </CardContent>

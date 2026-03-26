@@ -222,4 +222,31 @@ export const createTable = async (req, res) => {
   }
 };
 
+// @route   DELETE /api/tables/:id
+// @desc    Delete a table (owner only, only if not currently booked)
+// @access  Protected (owner)
+export const deleteTable = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const table = await Table.findOne({ _id: id, restaurantId: req.restaurantId });
+    if (!table) {
+      return res.status(404).json({ message: "Table not found" });
+    }
+
+    if (table.isBooked) {
+      return res.status(400).json({
+        message: "Cannot delete a table that is currently booked. Please reset/serve the table first.",
+      });
+    }
+
+    await Table.findByIdAndDelete(id);
+
+    return res.json({ success: true, message: `Table ${table.tableNumber} deleted successfully` });
+  } catch (error) {
+    console.error("deleteTable error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 

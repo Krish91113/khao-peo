@@ -31,6 +31,11 @@ const orderSchema = new mongoose.Schema(
       enum: ["pending", "sent_to_kitchen", "preparing", "ready", "served"],
       default: "sent_to_kitchen",
     },
+    orderType: {
+      type: String,
+      enum: ["dine_in", "inhouse_delivery"],
+      default: "dine_in",
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -41,5 +46,6 @@ const orderSchema = new mongoose.Schema(
 );
 
 export const Order = mongoose.model("Order", orderSchema);
+
 
 

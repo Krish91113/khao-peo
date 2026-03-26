@@ -1,5 +1,11 @@
 import express from "express";
-import { createRestaurant, getAllRestaurants } from "../controllers/platform.controller.js";
+import {
+    createRestaurant,
+    getAllRestaurants,
+    getRestaurantById,
+    updateRestaurant,
+    deleteRestaurant,
+} from "../controllers/platform.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { requireRole } from "../middleware/role.middleware.js";
 
@@ -11,5 +17,8 @@ router.use(requireRole("platform_superadmin"));
 
 router.post("/restaurants", createRestaurant);
 router.get("/restaurants", getAllRestaurants);
+router.get("/restaurants/:id", getRestaurantById);
+router.put("/restaurants/:id", updateRestaurant);
+router.delete("/restaurants/:id", deleteRestaurant);
 
 export default router;

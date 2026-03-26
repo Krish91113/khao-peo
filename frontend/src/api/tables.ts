@@ -33,5 +33,11 @@ export const tablesAPI = {
     const response = await apiClient.post<Table>('/tables', data);
     return response.data;
   },
+
+  deleteTable: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.delete(`/tables/${id}`);
+    return response.data;
+  },
 };
+
 

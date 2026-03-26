@@ -6,7 +6,7 @@ import { Table } from "../models/Table.model.js";
 // @access  Protected (admin/waiter)
 export const createOrder = async (req, res) => {
   try {
-    const { table_id, items, total_amount } = req.body;
+    const { table_id, items, total_amount, orderType } = req.body;
 
     if (!table_id || !items || !items.length) {
       return res.status(400).json({ message: "Table and items are required" });
@@ -35,6 +35,7 @@ export const createOrder = async (req, res) => {
       items: transformedItems,
       totalAmount: total_amount,
       status: "sent_to_kitchen",
+      orderType: orderType || "dine_in",
       createdBy: req.user._id,
       restaurantId: req.restaurantId,
     });
@@ -49,6 +50,7 @@ export const createOrder = async (req, res) => {
       id: order._id,
       table_id: table._id.toString(),
       status: order.status,
+      orderType: order.orderType,
       total_amount: order.totalAmount,
       created_at: order.createdAt,
       updated_at: order.updatedAt,
@@ -61,6 +63,7 @@ export const createOrder = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 // @route   GET /api/orders/table/:tableId
 // @desc    Get all orders for a table

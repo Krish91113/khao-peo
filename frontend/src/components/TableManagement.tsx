@@ -235,8 +235,9 @@ const TableManagementEnhanced = ({ onTableSelect, onResetTable, onGenerateKOT }:
   };
 
   // Filter orders by status
-  const activeOrders = orders.filter(o => ["sent_to_kitchen", "preparing"].includes(o.status));
-  const runningOrders = orders.filter(o => o.status === "pending");
+  const activeOrders = orders.filter(o => ["sent_to_kitchen", "preparing"].includes(o.status) && o.orderType !== "inhouse_delivery");
+  const runningOrders = orders.filter(o => o.status === "pending" && o.orderType !== "inhouse_delivery");
+  const inhouseDeliveryOrders = orders.filter(o => o.orderType === "inhouse_delivery" && o.status !== "served");
 
   if (loading) {
     return <div className="text-center py-8">Loading tables...</div>;
@@ -271,18 +272,26 @@ const TableManagementEnhanced = ({ onTableSelect, onResetTable, onGenerateKOT }:
   return (
     <div className="w-full">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-4 sm:mb-6">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 mb-4 sm:mb-6">
           <TabsTrigger value="tables" className="text-xs sm:text-sm">Tables</TabsTrigger>
           <TabsTrigger value="served" className="text-xs sm:text-sm">
             Served
             {servedOrders.length > 0 && (
-              <Badge variant="destructive" className="ml-1 sm:ml-2 h-4 w-4 sm:h-5 sm:w-5 p-0 flex items-center justify-center text-xs">
+              <Badge variant="destructive" className="ml-1 h-4 w-4 p-0 flex items-center justify-center text-xs">
                 {servedOrders.length}
               </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="active" className="text-xs sm:text-sm">Active</TabsTrigger>
           <TabsTrigger value="running" className="text-xs sm:text-sm">Running</TabsTrigger>
+          <TabsTrigger value="inhouse_delivery" className="text-xs sm:text-sm">
+            Inhouse
+            {inhouseDeliveryOrders.length > 0 && (
+              <Badge variant="default" className="ml-1 h-4 w-4 p-0 flex items-center justify-center text-xs bg-primary">
+                {inhouseDeliveryOrders.length}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         {/* Tables Tab */}
@@ -604,6 +613,122 @@ const TableManagementEnhanced = ({ onTableSelect, onResetTable, onGenerateKOT }:
             )}
           </div>
         </TabsContent>
+
+        {/* Inhouse Delivery Tab */}
+        <TabsContent value="inhouse_delivery">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <div>
+              <h3 className="text-xl sm:text-2xl font-bold">In-house Delivery Orders</h3>
+              <p className="text-sm text-muted-foreground mt-1">Orders marked for in-house delivery</p>
+            </div>
+            <Badge className="text-sm px-3 py-1 bg-primary/10 text-primary border border-primary/20">
+              {inhouseDeliveryOrders.length} active
+            </Badge>
+          </div>
+
+          {inhouseDeliveryOrders.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <div className="text-4xl mb-3">🛵</div>
+              <p className="font-medium">No in-house delivery orders right now</p>
+              <p className="text-sm mt-1">In-house delivery orders will appear here when created</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              {inhouseDeliveryOrders.map((order: any) => {
+                const tableForOrder = tables.find(t => (t._id || t.id) === (order.table_id || order.table?._id));
+                return (
+                  <Card key={order._id || order.id} className="border-primary/40 bg-primary/5">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          🛵 Table {tableForOrder?.table_number || order.table?.tableNumber || "—"}
+                        </CardTitle>
+                        <Badge className="bg-primary text-primary-foreground text-xs">Inhouse Delivery</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(order.created_at || order.createdAt).toLocaleTimeString()}
+                      </p>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="space-y-1 bg-background/60 rounded p-2">
+                        {order.items?.map((item: any, idx: number) => (
+                          <div key={idx} className="flex justify-between text-xs sm:text-sm">
+                            <span>{item.item_name} × {item.quantity}</span>
+                            <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="pt-2 border-t">
+                        <span className="font-bold text-sm">Total: ₹{parseFloat(String(order.total_amount || order.totalAmount)).toFixed(2)}</span>
+                      </div>
+                      {tableForOrder && isAdmin && (
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                            onClick={(e) => handleGenerateKOT(tableForOrder, e)}
+                            disabled={generatingKOT === (tableForOrder._id || tableForOrder.id)}
+                          >
+                            <ChefHat className="h-3 w-3 mr-1" />
+                            KOT
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                            onClick={(e) => handleAddFood(tableForOrder, e)}
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add Food
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="text-xs"
+                            onClick={(e) => handleGenerateFinalBill(tableForOrder, e)}
+                            disabled={generatingBill === (tableForOrder._id || tableForOrder.id)}
+                          >
+                            <Receipt className="h-3 w-3 mr-1" />
+                            Final Bill
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs"
+                                disabled={resettingTable === (tableForOrder._id || tableForOrder.id)}
+                              >
+                                <RefreshCw className="h-3 w-3 mr-1" />
+                                Serve & Reset
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Mark as Served?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will mark the in-house delivery as served and reset Table {tableForOrder.table_number}. This cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={(e) => handleResetTable(tableForOrder, e)}>
+                                  Confirm
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
       </Tabs>
 
       {showBill && billData && (

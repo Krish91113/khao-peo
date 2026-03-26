@@ -16,8 +16,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   UtensilsCrossed,
   Users,
@@ -28,7 +40,8 @@ import {
   LayoutDashboard,
   Pizza,
   UserCog,
-  Plus
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import UserManagement from "@/components/UserManagement";
@@ -50,10 +63,13 @@ const OwnerDashboard = () => {
   const [showOrderEntry, setShowOrderEntry] = useState(false);
   const [isAddTableOpen, setIsAddTableOpen] = useState(false);
   const [newTableData, setNewTableData] = useState({ tableNumber: "", capacity: "4" });
+  const [tables, setTables] = useState<any[]>([]);
+  const [deletingTableId, setDeletingTableId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
     fetchStats();
+    fetchTables();
   }, []);
 
   const checkAuth = async () => {
@@ -81,17 +97,17 @@ const OwnerDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const [tables, orders, bills] = await Promise.all([
+      const [tablesData, orders, bills] = await Promise.all([
         tablesAPI.getAll(),
         ordersAPI.getAll(),
         billsAPI.getAll(),
       ]);
 
-      const activeTables = tables.filter((t: any) => t.is_booked).length;
+      const activeTables = tablesData.filter((t: any) => t.is_booked).length;
       const totalRevenue = bills.reduce((sum: number, b: any) => sum + parseFloat(String(b.total_amount || "0")), 0);
 
       setStats({
-        totalTables: tables.length,
+        totalTables: tablesData.length,
         activeTables,
         totalOrders: orders.length,
         totalRevenue,
@@ -99,6 +115,15 @@ const OwnerDashboard = () => {
     } catch (error) {
       console.error("Failed to fetch stats:", error);
       toast.error("Failed to load statistics");
+    }
+  };
+
+  const fetchTables = async () => {
+    try {
+      const data = await tablesAPI.getAll();
+      setTables(data);
+    } catch (error) {
+      console.error("Failed to fetch tables:", error);
     }
   };
 
@@ -126,9 +151,24 @@ const OwnerDashboard = () => {
       toast.success("Table created successfully");
       setIsAddTableOpen(false);
       setNewTableData({ tableNumber: "", capacity: "4" });
-      fetchStats(); // Refresh stats
+      fetchStats();
+      fetchTables();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to create table");
+    }
+  };
+
+  const handleDeleteTable = async (tableId: string, tableNumber: string) => {
+    setDeletingTableId(tableId);
+    try {
+      await tablesAPI.deleteTable(tableId);
+      toast.success(`Table ${tableNumber} deleted successfully`);
+      fetchStats();
+      fetchTables();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to delete table");
+    } finally {
+      setDeletingTableId(null);
     }
   };
 
@@ -276,6 +316,71 @@ const OwnerDashboard = () => {
               </Dialog>
             </div>
 
+            {/* Tables List with Delete Option */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+              {tables.map((table) => (
+                <Card key={table._id || table.id} className={`relative ${table.is_booked ? "border-primary/50" : "border-border"}`}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">Table {table.table_number}</CardTitle>
+                      <Badge variant={table.is_booked ? "default" : "secondary"}>
+                        {table.is_booked ? "Booked" : "Available"}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                      <Users className="h-4 w-4" />
+                      <span>Capacity: {table.capacity}</span>
+                    </div>
+                    {!table.is_booked && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="w-full"
+                            disabled={deletingTableId === (table._id || table.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            {deletingTableId === (table._id || table.id) ? "Deleting..." : "Delete Table"}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Table {table.table_number}?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete Table {table.table_number}. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              onClick={() => handleDeleteTable(table._id || table.id, table.table_number)}
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                    {table.is_booked && (
+                      <p className="text-xs text-muted-foreground text-center mt-1">
+                        Reset table before deleting
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+              {tables.length === 0 && (
+                <div className="col-span-full text-center py-8 text-muted-foreground">
+                  No tables yet. Click "Add Table" to create one.
+                </div>
+              )}
+            </div>
+
+            {/* Full Table Management Component */}
             {!showOrderEntry ? (
               <TableManagement
                 onTableSelect={handleTableSelect}
@@ -284,6 +389,7 @@ const OwnerDashboard = () => {
                     setSelectedTable(null);
                   }
                   fetchStats();
+                  fetchTables();
                 }}
               />
             ) : (
@@ -304,6 +410,7 @@ const OwnerDashboard = () => {
                     setShowOrderEntry(false);
                     setSelectedTable(null);
                     fetchStats();
+                    fetchTables();
                   }}
                 />
               </div>

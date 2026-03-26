@@ -19,28 +19,54 @@ import {
     DialogTrigger,
     DialogFooter,
 } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Users, Building, DollarSign, Activity, Plus, Store, Search, LogOut } from "lucide-react";
+import { Users, Building, DollarSign, Activity, Plus, Store, Search, LogOut, Settings, Trash2, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import axios from "axios";
 
-// Helper for API calls
-const API_URL = "http://localhost:5000/api"; // Should come from config
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const API_URL: string = (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_URL) || "http://localhost:5000/api";
 const getAuthHeader = () => {
     const token = localStorage.getItem("token");
     return { headers: { Authorization: `Bearer ${token}` } };
 };
 
+const PLAN_LABELS: Record<string, string> = {
+    basic: "Basic",
+    professional: "Professional",
+    enterprise: "Enterprise",
+};
+
+const STATUS_OPTIONS = ["active", "trial", "suspended", "inactive"];
+
 const PlatformDashboard = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("overview");
-    const [restaurants, setRestaurants] = useState([]);
+    const [restaurants, setRestaurants] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
-    const [formData, setFormData] = useState({
+    const [manageDialogOpen, setManageDialogOpen] = useState(false);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [selectedRestaurant, setSelectedRestaurant] = useState<any>(null);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    const [createFormData, setCreateFormData] = useState({
         name: "",
         slug: "",
         ownerName: "",
@@ -49,46 +75,119 @@ const PlatformDashboard = () => {
         plan: "basic",
     });
 
-    // Fetch initial data
+    const [manageFormData, setManageFormData] = useState({
+        restaurantName: "",
+        plan: "basic",
+        status: "trial",
+        ownerPassword: "",
+    });
+
     useEffect(() => {
+        checkAuth();
         fetchRestaurants();
     }, []);
+
+    const checkAuth = () => {
+        const userStr = localStorage.getItem("user");
+        if (!userStr) { navigate("/auth"); return; }
+        const user = JSON.parse(userStr);
+        if (user.role !== "platform_superadmin") {
+            navigate("/auth");
+        }
+    };
 
     const fetchRestaurants = async () => {
         try {
             const res = await axios.get(`${API_URL}/platform/restaurants`, getAuthHeader());
             setRestaurants(res.data.restaurants || []);
-            setLoading(false);
         } catch (error) {
             console.error("Failed to fetch data", error);
             toast.error("Failed to load dashboard data");
+        } finally {
             setLoading(false);
         }
     };
 
     const handleCreateRestaurant = async () => {
+        if (!createFormData.name || !createFormData.slug || !createFormData.ownerName || !createFormData.ownerEmail || !createFormData.ownerPassword) {
+            toast.error("Please fill in all required fields");
+            return;
+        }
         try {
             const payload = {
-                name: formData.name,
-                slug: formData.slug,
-                address: { street: "123 Main St", city: "Mumbai", state: "MH", pincode: "400001" }, // Mocked for simplicity
-                contact: { phone: "9876543210", email: "contact@example.com" }, // Mocked
-                business: { gstNumber: "27AAAAA0000A1Z5", fssaiNumber: "12345678901234" }, // Mocked
+                name: createFormData.name,
+                slug: createFormData.slug.toLowerCase().replace(/\s+/g, "-"),
+                address: { street: "TBD", city: "TBD", state: "TBD", pincode: "000000" },
+                contact: { phone: "0000000000", email: createFormData.ownerEmail },
+                business: {},
                 owner: {
-                    fullName: formData.ownerName,
-                    email: formData.ownerEmail,
-                    password: formData.ownerPassword,
+                    fullName: createFormData.ownerName,
+                    email: createFormData.ownerEmail,
+                    password: createFormData.ownerPassword,
                 },
-                plan: formData.plan,
+                plan: createFormData.plan,
             };
 
             await axios.post(`${API_URL}/platform/restaurants`, payload, getAuthHeader());
-            toast.success("Restaurant created successfully!");
+            toast.success("Restaurant created! Welcome email sent to owner.");
             setCreateDialogOpen(false);
+            setCreateFormData({ name: "", slug: "", ownerName: "", ownerEmail: "", ownerPassword: "", plan: "basic" });
             fetchRestaurants();
-        } catch (error) {
-            console.error("Create error", error);
+        } catch (error: any) {
             toast.error(error.response?.data?.message || "Failed to create restaurant");
+        }
+    };
+
+    const handleOpenManage = (restaurant: any) => {
+        setSelectedRestaurant(restaurant);
+        setManageFormData({
+            restaurantName: restaurant.name,
+            plan: restaurant.subscription?.plan || "basic",
+            status: restaurant.status || "trial",
+            ownerPassword: "",
+        });
+        setManageDialogOpen(true);
+    };
+
+    const handleSaveChanges = async () => {
+        if (!selectedRestaurant) return;
+        setSaving(true);
+        try {
+            const payload: any = {
+                restaurantName: manageFormData.restaurantName,
+                plan: manageFormData.plan,
+                status: manageFormData.status,
+            };
+            if (manageFormData.ownerPassword) {
+                payload.ownerPassword = manageFormData.ownerPassword;
+            }
+
+            await axios.put(`${API_URL}/platform/restaurants/${selectedRestaurant._id}`, payload, getAuthHeader());
+            toast.success("Restaurant updated successfully!");
+            setManageDialogOpen(false);
+            setSelectedRestaurant(null);
+            fetchRestaurants();
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to update restaurant");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDeleteRestaurant = async () => {
+        if (!selectedRestaurant) return;
+        setDeleting(true);
+        try {
+            await axios.delete(`${API_URL}/platform/restaurants/${selectedRestaurant._id}`, getAuthHeader());
+            toast.success(`Restaurant "${selectedRestaurant.name}" deleted successfully`);
+            setDeleteConfirmOpen(false);
+            setManageDialogOpen(false);
+            setSelectedRestaurant(null);
+            fetchRestaurants();
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to delete restaurant");
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -98,29 +197,45 @@ const PlatformDashboard = () => {
         navigate("/auth");
     };
 
+    const filteredRestaurants = restaurants.filter((r) =>
+        r.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.slug?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.owner?.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const getPlanBadgeColor = (plan: string) => {
+        if (plan === "enterprise") return "bg-purple-100 text-purple-800 border-purple-200";
+        if (plan === "professional") return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    };
+
+    const getStatusBadgeColor = (status: string) => {
+        if (status === "active") return "bg-green-100 text-green-800 border-green-200";
+        if (status === "trial") return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        if (status === "suspended") return "bg-red-100 text-red-800 border-red-200";
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    };
+
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-8">
             {/* Header */}
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Platform Dashboard</h1>
-                    <p className="text-muted-foreground">Manage your SaaS restaurants and platform settings.</p>
+                    <p className="text-muted-foreground">Manage restaurants, subscriptions, and platform settings.</p>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="text-sm font-medium">SuperAdmin</div>
                     <Button variant="outline" size="sm" onClick={handleLogout}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Logout
+                        <LogOut className="mr-2 h-4 w-4" /> Logout
                     </Button>
                 </div>
             </div>
 
-            {/* Main Content */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="restaurants">Restaurants</TabsTrigger>
-                    <TabsTrigger value="settings">Platform Settings</TabsTrigger>
+                    <TabsTrigger value="restaurants">Restaurants ({restaurants.length})</TabsTrigger>
                 </TabsList>
 
                 {/* Overview Tab */}
@@ -133,131 +248,239 @@ const PlatformDashboard = () => {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{restaurants.length}</div>
-                                <p className="text-xs text-muted-foreground">+2 from last month</p>
+                                <p className="text-xs text-muted-foreground">Onboarded tenants</p>
                             </CardContent>
                         </Card>
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">₹45,231.89</div>
-                                <p className="text-xs text-muted-foreground">+20.1% from last month</p>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Active Subscriptions</CardTitle>
+                                <CardTitle className="text-sm font-medium">Active</CardTitle>
                                 <Activity className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{restaurants.length}</div>
-                                <p className="text-xs text-muted-foreground">+12 since last hour</p>
+                                <div className="text-2xl font-bold">{restaurants.filter(r => r.status === "active").length}</div>
+                                <p className="text-xs text-muted-foreground">Active subscriptions</p>
                             </CardContent>
                         </Card>
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Total Users (Global)</CardTitle>
+                                <CardTitle className="text-sm font-medium">On Trial</CardTitle>
                                 <Users className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">+573</div>
-                                <p className="text-xs text-muted-foreground">+201 since last week</p>
+                                <div className="text-2xl font-bold">{restaurants.filter(r => r.status === "trial").length}</div>
+                                <p className="text-xs text-muted-foreground">Trial period</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Enterprise</CardTitle>
+                                <Building className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{restaurants.filter(r => r.subscription?.plan === "enterprise").length}</div>
+                                <p className="text-xs text-muted-foreground">Enterprise plans</p>
                             </CardContent>
                         </Card>
                     </div>
+
+                    {/* Recent Restaurants */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Recent Restaurants</CardTitle>
+                            <CardDescription>Last 5 onboarded restaurants</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                {restaurants.slice(0, 5).map((r) => (
+                                    <div key={r._id} className="flex items-center justify-between p-3 bg-muted/40 rounded-lg">
+                                        <div>
+                                            <p className="font-medium text-sm">{r.name}</p>
+                                            <p className="text-xs text-muted-foreground">{r.owner?.email || "No owner"}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-xs px-2 py-0.5 rounded border ${getPlanBadgeColor(r.subscription?.plan)}`}>
+                                                {PLAN_LABELS[r.subscription?.plan] || "Basic"}
+                                            </span>
+                                            <span className={`text-xs px-2 py-0.5 rounded border capitalize ${getStatusBadgeColor(r.status)}`}>
+                                                {r.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                                {restaurants.length === 0 && !loading && (
+                                    <p className="text-center text-muted-foreground py-4">No restaurants yet.</p>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
 
                 {/* Restaurants Tab */}
                 <TabsContent value="restaurants" className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                            <Input placeholder="Search restaurants..." className="w-[300px]" />
-                            <Button variant="outline"><Search className="h-4 w-4" /></Button>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <div className="relative flex-1 sm:w-[300px]">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search by name, slug, email..."
+                                    className="pl-9"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
                         </div>
 
+                        {/* Create Dialog */}
                         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                             <DialogTrigger asChild>
-                                <Button><Plus className="mr-2 h-4 w-4" /> Add Restaurant</Button>
+                                <Button>
+                                    <Plus className="mr-2 h-4 w-4" /> Add Restaurant
+                                </Button>
                             </DialogTrigger>
-                            <DialogContent className="sm:max-w-[425px]">
+                            <DialogContent className="sm:max-w-[480px]">
                                 <DialogHeader>
                                     <DialogTitle>Add New Restaurant</DialogTitle>
                                     <DialogDescription>
-                                        Create a new tenant for the platform. This will create an owner account.
+                                        Create a new restaurant tenant. The owner will receive a welcome email with login credentials.
                                     </DialogDescription>
                                 </DialogHeader>
                                 <div className="grid gap-4 py-4">
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="name" className="text-right">Name</Label>
-                                        <Input id="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="col-span-3" />
+                                        <Label className="text-right">Name</Label>
+                                        <Input
+                                            value={createFormData.name}
+                                            onChange={(e) => setCreateFormData({ ...createFormData, name: e.target.value })}
+                                            className="col-span-3"
+                                            placeholder="My Restaurant"
+                                        />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="slug" className="text-right">Slug (ID)</Label>
-                                        <Input id="slug" value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} className="col-span-3" />
+                                        <Label className="text-right">Slug (ID)</Label>
+                                        <Input
+                                            value={createFormData.slug}
+                                            onChange={(e) => setCreateFormData({ ...createFormData, slug: e.target.value })}
+                                            className="col-span-3"
+                                            placeholder="my-restaurant"
+                                        />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="plan" className="text-right">Plan</Label>
-                                        <select id="plan" className="col-span-3 p-2 border rounded" value={formData.plan} onChange={(e) => setFormData({ ...formData, plan: e.target.value })}>
-                                            <option value="basic">Basic</option>
-                                            <option value="professional">Professional</option>
-                                            <option value="enterprise">Enterprise</option>
+                                        <Label className="text-right">Plan</Label>
+                                        <select
+                                            className="col-span-3 p-2 border rounded bg-background text-foreground"
+                                            value={createFormData.plan}
+                                            onChange={(e) => setCreateFormData({ ...createFormData, plan: e.target.value })}
+                                        >
+                                            <option value="basic">Basic (10 tables, 5 staff)</option>
+                                            <option value="professional">Professional (30 tables, 15 staff)</option>
+                                            <option value="enterprise">Enterprise (Unlimited)</option>
                                         </select>
                                     </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="ownerName" className="text-right">Owner Name</Label>
-                                        <Input id="ownerName" value={formData.ownerName} onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })} className="col-span-3" />
+                                    <div className="border-t pt-3 mt-1">
+                                        <p className="text-sm font-semibold text-muted-foreground mb-3">Owner Details</p>
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="ownerEmail" className="text-right">Owner Email</Label>
-                                        <Input id="ownerEmail" value={formData.ownerEmail} onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })} className="col-span-3" />
+                                        <Label className="text-right">Full Name</Label>
+                                        <Input
+                                            value={createFormData.ownerName}
+                                            onChange={(e) => setCreateFormData({ ...createFormData, ownerName: e.target.value })}
+                                            className="col-span-3"
+                                            placeholder="John Doe"
+                                        />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="ownerPass" className="text-right">Password</Label>
-                                        <Input id="ownerPass" type="password" value={formData.ownerPassword} onChange={(e) => setFormData({ ...formData, ownerPassword: e.target.value })} className="col-span-3" />
+                                        <Label className="text-right">Email</Label>
+                                        <Input
+                                            type="email"
+                                            value={createFormData.ownerEmail}
+                                            onChange={(e) => setCreateFormData({ ...createFormData, ownerEmail: e.target.value })}
+                                            className="col-span-3"
+                                            placeholder="owner@restaurant.com"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label className="text-right">Password</Label>
+                                        <Input
+                                            type="password"
+                                            value={createFormData.ownerPassword}
+                                            onChange={(e) => setCreateFormData({ ...createFormData, ownerPassword: e.target.value })}
+                                            className="col-span-3"
+                                            placeholder="Minimum 6 characters"
+                                        />
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <Button type="submit" onClick={handleCreateRestaurant}>Create Restaurant</Button>
+                                    <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+                                    <Button onClick={handleCreateRestaurant}>Create Restaurant</Button>
                                 </DialogFooter>
                             </DialogContent>
                         </Dialog>
                     </div>
 
+                    {/* Restaurants Table */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Restaurants List</CardTitle>
-                            <CardDescription>Manage all onboarded restaurants.</CardDescription>
+                            <CardTitle>All Restaurants</CardTitle>
+                            <CardDescription>
+                                {filteredRestaurants.length} restaurant{filteredRestaurants.length !== 1 ? "s" : ""} found
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Slug</TableHead>
+                                        <TableHead>Restaurant</TableHead>
+                                        <TableHead>Owner</TableHead>
                                         <TableHead>Plan</TableHead>
-                                        <TableHead>Using Since</TableHead>
                                         <TableHead>Status</TableHead>
+                                        <TableHead>Created</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {restaurants.map((restaurant) => (
+                                    {filteredRestaurants.map((restaurant) => (
                                         <TableRow key={restaurant._id}>
-                                            <TableCell className="font-medium">{restaurant.name}</TableCell>
-                                            <TableCell>{restaurant.slug}</TableCell>
-                                            <TableCell><Badge variant="outline" className="uppercase">{restaurant.status}</Badge></TableCell>
-                                            <TableCell>{new Date(restaurant.createdAt).toLocaleDateString()}</TableCell>
-                                            <TableCell>{restaurant.status === 'active' ? <span className="text-green-500">Active</span> : <span className="text-yellow-500">Trial</span>}</TableCell>
+                                            <TableCell>
+                                                <div>
+                                                    <p className="font-medium">{restaurant.name}</p>
+                                                    <p className="text-xs text-muted-foreground">{restaurant.slug}</p>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div>
+                                                    <p className="text-sm">{restaurant.owner?.fullName || "—"}</p>
+                                                    <p className="text-xs text-muted-foreground">{restaurant.owner?.email || "—"}</p>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className={`text-xs px-2 py-1 rounded border font-medium ${getPlanBadgeColor(restaurant.subscription?.plan)}`}>
+                                                    {PLAN_LABELS[restaurant.subscription?.plan] || "Basic"}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className={`text-xs px-2 py-1 rounded border font-medium capitalize ${getStatusBadgeColor(restaurant.status)}`}>
+                                                    {restaurant.status || "trial"}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">
+                                                {new Date(restaurant.createdAt).toLocaleDateString()}
+                                            </TableCell>
                                             <TableCell className="text-right">
-                                                <Button variant="ghost" size="sm">Manage</Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleOpenManage(restaurant)}
+                                                >
+                                                    <Settings className="h-3.5 w-3.5 mr-1.5" />
+                                                    Manage
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     ))}
-                                    {restaurants.length === 0 && !loading && (
+                                    {filteredRestaurants.length === 0 && !loading && (
                                         <TableRow>
-                                            <TableCell colSpan={6} className="text-center py-4">No restaurants found. Create one!</TableCell>
+                                            <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                                {searchQuery ? "No restaurants match your search." : "No restaurants yet. Create the first one!"}
+                                            </TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
@@ -266,6 +489,132 @@ const PlatformDashboard = () => {
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            {/* === MANAGE RESTAURANT DIALOG === */}
+            <Dialog open={manageDialogOpen} onOpenChange={setManageDialogOpen}>
+                <DialogContent className="sm:max-w-[520px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Settings className="h-5 w-5 text-primary" />
+                            Manage: {selectedRestaurant?.name}
+                        </DialogTitle>
+                        <DialogDescription>
+                            Update plan, status, restaurant name, or reset the owner's password.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid gap-5 py-4">
+                        {/* Owner Info (read-only) */}
+                        <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Owner Info</p>
+                            <p className="text-sm font-medium">{selectedRestaurant?.owner?.fullName || "—"}</p>
+                            <p className="text-sm text-muted-foreground">{selectedRestaurant?.owner?.email || "—"}</p>
+                        </div>
+
+                        {/* Restaurant Name */}
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label className="text-right text-sm">Restaurant Name</Label>
+                            <Input
+                                value={manageFormData.restaurantName}
+                                onChange={(e) => setManageFormData({ ...manageFormData, restaurantName: e.target.value })}
+                                className="col-span-3"
+                            />
+                        </div>
+
+                        {/* Plan */}
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label className="text-right text-sm">Plan</Label>
+                            <select
+                                className="col-span-3 p-2 border rounded bg-background text-foreground"
+                                value={manageFormData.plan}
+                                onChange={(e) => setManageFormData({ ...manageFormData, plan: e.target.value })}
+                            >
+                                <option value="basic">Basic (10 tables, 5 staff)</option>
+                                <option value="professional">Professional (30 tables, 15 staff)</option>
+                                <option value="enterprise">Enterprise (Unlimited)</option>
+                            </select>
+                        </div>
+
+                        {/* Status */}
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label className="text-right text-sm">Status</Label>
+                            <select
+                                className="col-span-3 p-2 border rounded bg-background text-foreground"
+                                value={manageFormData.status}
+                                onChange={(e) => setManageFormData({ ...manageFormData, status: e.target.value })}
+                            >
+                                {STATUS_OPTIONS.map((s) => (
+                                    <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Owner Password Reset */}
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label className="text-right text-sm">New Password</Label>
+                            <div className="col-span-3 relative">
+                                <Input
+                                    type={showNewPassword ? "text" : "password"}
+                                    placeholder="Leave blank to keep current"
+                                    value={manageFormData.ownerPassword}
+                                    onChange={(e) => setManageFormData({ ...manageFormData, ownerPassword: e.target.value })}
+                                    className="pr-10"
+                                />
+                                <button
+                                    type="button"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                >
+                                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between">
+                        {/* Delete button on the left */}
+                        <Button
+                            variant="destructive"
+                            onClick={() => setDeleteConfirmOpen(true)}
+                            className="sm:mr-auto"
+                        >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Restaurant
+                        </Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={() => setManageDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={handleSaveChanges} disabled={saving}>
+                                {saving ? "Saving..." : "Save Changes"}
+                            </Button>
+                        </div>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* === DELETE CONFIRMATION === */}
+            <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete "{selectedRestaurant?.name}"?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the restaurant, all its staff accounts, tables, orders, bills, and subscriptions.
+                            <strong className="block mt-2 text-destructive">This action CANNOT be undone.</strong>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={handleDeleteRestaurant}
+                            disabled={deleting}
+                        >
+                            {deleting ? "Deleting..." : "Yes, Delete Everything"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };
