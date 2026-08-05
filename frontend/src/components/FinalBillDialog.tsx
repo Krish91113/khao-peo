@@ -1,9 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2, Printer, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { motion, AnimatePresence } from "framer-motion";
 import { billsAPI } from "@/api/bills";
 import { restaurantAPI } from "@/api/restaurant";
 import { toast } from "sonner";
@@ -20,6 +17,7 @@ const FinalBillDialog = ({ tableId, tableNumber, open, onClose }: FinalBillDialo
     const [billData, setBillData] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
     const [restaurantName, setRestaurantName] = useState<string>("");
+    const receiptRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (open) {
@@ -34,7 +32,6 @@ const FinalBillDialog = ({ tableId, tableNumber, open, onClose }: FinalBillDialo
             setRestaurantName(details.name);
         } catch (error) {
             console.error("Failed to fetch restaurant details:", error);
-            // Fallback to KHAO PEEO or empty string if fetch fails
         }
     };
 
@@ -55,171 +52,322 @@ const FinalBillDialog = ({ tableId, tableNumber, open, onClose }: FinalBillDialo
         }
     };
 
-    const handlePrint = () => {
-        const printContent = document.getElementById('final-customer-receipt');
-        if (!printContent) return;
+    const formatDate = (dateString: string) => {
+        const d = new Date(dateString);
+        return {
+            date: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+            time: d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        };
+    };
 
-        const printWindow = window.open('', '_blank');
+    const handlePrint = () => {
+        const content = receiptRef.current;
+        if (!content) return;
+
+        const printWindow = window.open('', '_blank', 'width=400,height=700');
         if (!printWindow) return;
 
         printWindow.document.write(`
-      <html>
-        <head>
-          <title>Customer Receipt - Table ${tableNumber}</title>
-          <style>
-            body { font-family: 'Satoshi', Arial, sans-serif; padding: 20px; max-width: 400px; margin: 0 auto; }
-            .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 15px; }
-            .title { font-size: 32px; font-weight: 700; margin-bottom: 5px; letter-spacing: 1px; }
-            .subtitle { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-            .info { display: flex; justify-content: space-between; padding: 15px; background: #f5f5f5; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd; }
-            .items { margin-bottom: 20px; }
-            .item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #ddd; }
-            .item-name { font-weight: 600; font-size: 14px; }
-            .item-details { font-size: 11px; color: #666; font-family: monospace; margin-top: 3px; }
-            .totals { margin-top: 20px; background: #f9f9f9; padding: 15px; border-radius: 8px; }
-            .total-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
-            .total-final { font-size: 22px; font-weight: 700; margin-top: 10px; padding-top: 10px; border-top: 2px solid #000; }
-            .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; font-weight: 500; }
-            @media print { body { margin: 0; } }
-          </style>
-        </head>
-        <body>
-          ${printContent.innerHTML}
-        </body>
-      </html>
-    `);
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Final Bill - Table ${tableNumber}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
+      width: 80mm;
+      max-width: 80mm;
+      margin: 0 auto;
+      padding: 8mm 6mm;
+      font-size: 12px;
+      color: #000;
+      background: #fff;
+    }
+    .center { text-align: center; }
+    .bold { font-weight: 700; }
+    .divider-solid { border-top: 2px solid #000; margin: 6px 0; }
+    .divider-dashed { border-top: 1px dashed #000; margin: 6px 0; }
+    .row { display: flex; justify-content: space-between; padding: 3px 0; }
+    @page { size: 80mm auto; margin: 0; }
+    @media print { body { padding: 4mm; } }
+  </style>
+</head>
+<body>
+  ${content.innerHTML}
+</body>
+</html>`);
         printWindow.document.close();
         printWindow.focus();
         setTimeout(() => {
             printWindow.print();
             printWindow.close();
-        }, 250);
+        }, 300);
         toast.success("Customer receipt sent to printer!");
     };
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleString("en-IN", {
-            dateStyle: "medium",
-            timeStyle: "short",
-        });
-    };
+    // Compute values from bill data
+    const billId = billData?.id || billData?._id || '';
+    const createdAt = billData?.created_at || billData?.createdAt || new Date().toISOString();
+    const { date: dateStr, time: timeStr } = formatDate(createdAt);
+    const items = billData?.items || [];
+    const subtotal = parseFloat(String(billData?.subtotal || 0)).toFixed(2);
+    const tax = parseFloat(String(billData?.tax || 0)).toFixed(2);
+    const totalAmount = parseFloat(String(billData?.total_amount || billData?.totalAmount || 0)).toFixed(2);
+    const totalQty = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+
+    if (!open) return null;
 
     return (
-        <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold">Final Bill - Table {tableNumber}</DialogTitle>
-                </DialogHeader>
-
-                {loading && (
-                    <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                        <p className="text-lg font-medium text-muted-foreground">Generating final bill...</p>
-                    </div>
-                )}
-
-                {error && !loading && (
-                    <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                        <div className="text-destructive text-center">
-                            <p className="text-lg font-semibold mb-2">Error generating bill</p>
-                            <p className="text-sm">{error}</p>
+        <AnimatePresence>
+            <motion.div
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={onClose}
+            >
+                <motion.div
+                    initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 40, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex flex-col items-center gap-3 w-full max-w-xs"
+                >
+                    {/* Action Buttons */}
+                    {!loading && !error && billData && (
+                        <div className="flex gap-2 w-full print:hidden">
+                            <button
+                                onClick={handlePrint}
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                                style={{ backgroundColor: "#E85D25" }}
+                            >
+                                <Printer className="h-4 w-4" />
+                                Print Bill
+                            </button>
+                            <button
+                                onClick={onClose}
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-all hover:opacity-80"
+                                style={{ borderColor: "#e1bfb4", color: "#594139", backgroundColor: "#fff" }}
+                            >
+                                <X className="h-4 w-4" />
+                                Close
+                            </button>
                         </div>
-                        <Button onClick={onClose} variant="outline">
-                            Close
-                        </Button>
-                    </div>
-                )}
+                    )}
 
-                {!loading && !error && billData && (
-                    <div className="space-y-4">
-                        {/* Customer Receipt */}
-                        <Card id="final-customer-receipt" className="border-2">
-                            <CardHeader className="text-center border-b-2 bg-gradient-to-r from-orange-50 to-red-50">
-                                <div className="space-y-3">
-                                    <CardTitle className="text-4xl font-bold tracking-tight">{restaurantName || "KHAO PEEO"}</CardTitle>
-                                    <div className="h-px bg-gradient-to-r from-transparent via-primary to-transparent"></div>
-                                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Customer Receipt</p>
-                                    <p className="text-xs text-muted-foreground font-mono">
-                                        {formatDate(billData.created_at || new Date().toISOString())}
-                                    </p>
+                    {/* Receipt Card */}
+                    <div
+                        style={{
+                            fontFamily: "'JetBrains Mono', 'Courier New', Courier, monospace",
+                            width: "80mm",
+                            maxWidth: "100%",
+                            backgroundColor: "#ffffff",
+                            color: "#000000",
+                            padding: "10mm 8mm",
+                            fontSize: "12px",
+                            lineHeight: "1.5",
+                            boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
+                            borderRadius: "4px",
+                            minHeight: "120px",
+                        }}
+                    >
+                        {/* Loading State */}
+                        {loading && (
+                            <div style={{ textAlign: "center", padding: "24px 0" }}>
+                                <div style={{ fontSize: "20px", fontWeight: "700", letterSpacing: "0.1em", marginBottom: "12px" }}>
+                                    KHAO PEEO
                                 </div>
-                            </CardHeader>
-                            <CardContent className="space-y-6 pt-6">
-                                {/* Table Info */}
-                                <div className="flex justify-between items-center p-5 bg-gradient-to-r from-muted/30 to-muted/50 rounded-lg border">
-                                    <div>
-                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Table Number</p>
-                                        <p className="text-3xl font-bold">#{tableNumber}</p>
+                                <div style={{ borderTop: "2px solid #000", margin: "8px 0" }} />
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "12px 0" }}>
+                                    <span style={{ fontSize: "11px", opacity: 0.7 }}>Generating bill...</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Error State */}
+                        {error && !loading && (
+                            <div style={{ textAlign: "center", padding: "16px 0" }}>
+                                <div style={{ fontSize: "20px", fontWeight: "700", letterSpacing: "0.1em", marginBottom: "12px" }}>
+                                    KHAO PEEO
+                                </div>
+                                <div style={{ borderTop: "2px solid #000", margin: "8px 0" }} />
+                                <div style={{ fontSize: "11px", color: "#ba1a1a", padding: "8px 0" }}>
+                                    ⚠ {error}
+                                </div>
+                                <div style={{ borderTop: "1px dashed #000", margin: "8px 0" }} />
+                                <button
+                                    onClick={onClose}
+                                    style={{
+                                        marginTop: "8px",
+                                        padding: "6px 16px",
+                                        border: "1px solid #ccc",
+                                        borderRadius: "4px",
+                                        fontSize: "11px",
+                                        cursor: "pointer",
+                                        backgroundColor: "#f5f5f5",
+                                    }}
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Bill Content */}
+                        {!loading && !error && billData && (
+                            <div ref={receiptRef}>
+                                {/* Header */}
+                                <div style={{ textAlign: "center", paddingBottom: "8px" }}>
+                                    <div style={{ fontSize: "20px", fontWeight: "700", letterSpacing: "0.1em" }}>
+                                        {restaurantName || "KHAO PEEO"}
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Bill Number</p>
-                                        <p className="text-lg font-mono font-bold">{(billData.id || billData._id || '').slice(0, 8).toUpperCase()}</p>
+                                    <div style={{ fontSize: "10px", letterSpacing: "0.15em", opacity: 0.7, marginTop: "2px" }}>
+                                        SMART POS FOR RESTAURANTS
                                     </div>
+                                    <div style={{ fontSize: "13px", fontWeight: "700", marginTop: "6px", letterSpacing: "0.08em" }}>
+                                        *** CUSTOMER RECEIPT ***
+                                    </div>
+                                </div>
+
+                                {/* Solid divider */}
+                                <div style={{ borderTop: "2px solid #000", margin: "8px 0" }} />
+
+                                {/* Bill meta info */}
+                                <div style={{ marginBottom: "6px" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+                                        <span style={{ opacity: 0.6, fontSize: "11px" }}>DATE</span>
+                                        <span style={{ fontWeight: "600", fontSize: "11px" }}>{dateStr}</span>
+                                    </div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+                                        <span style={{ opacity: 0.6, fontSize: "11px" }}>TIME</span>
+                                        <span style={{ fontWeight: "600", fontSize: "11px" }}>{timeStr}</span>
+                                    </div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+                                        <span style={{ opacity: 0.6, fontSize: "11px" }}>TABLE NO</span>
+                                        <span style={{ fontWeight: "700", fontSize: "16px" }}>#{tableNumber}</span>
+                                    </div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+                                        <span style={{ opacity: 0.6, fontSize: "11px" }}>BILL NO</span>
+                                        <span style={{ fontWeight: "700", fontSize: "12px" }}>
+                                            {billId.toString().slice(0, 8).toUpperCase()}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Dashed divider */}
+                                <div style={{ borderTop: "1px dashed #000", margin: "8px 0" }} />
+
+                                {/* Items header */}
+                                <div style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    fontWeight: "700",
+                                    fontSize: "10px",
+                                    letterSpacing: "0.08em",
+                                    textTransform: "uppercase",
+                                    paddingBottom: "4px",
+                                    borderBottom: "1px solid #000",
+                                }}>
+                                    <span style={{ width: "8%" }}>QTY</span>
+                                    <span style={{ width: "52%", paddingLeft: "4px" }}>ITEM</span>
+                                    <span style={{ width: "18%", textAlign: "center" }}>RATE</span>
+                                    <span style={{ width: "22%", textAlign: "right" }}>AMOUNT</span>
                                 </div>
 
                                 {/* Items */}
-                                <div className="space-y-4">
-                                    <h3 className="font-bold text-lg uppercase tracking-wide border-b pb-2">Order Items</h3>
-                                    <div className="space-y-3">
-                                        {billData.items?.map((item: any, index: number) => (
-                                            <div key={index} className="flex justify-between items-center py-3 border-b border-dashed">
-                                                <div className="flex-1">
-                                                    <p className="font-semibold text-base">{item.name || item.item_name || 'Unknown Item'}</p>
-                                                    <p className="text-xs text-muted-foreground font-mono mt-1">
-                                                        ₹{item.price.toFixed(2)} × {item.quantity}
-                                                    </p>
-                                                </div>
-                                                <p className="font-bold text-lg">₹{(item.price * item.quantity).toFixed(2)}</p>
+                                <div style={{ marginTop: "4px" }}>
+                                    {items.map((item: any, index: number) => {
+                                        const price = parseFloat(String(item.price || 0));
+                                        const qty = item.quantity || 0;
+                                        const amount = (price * qty).toFixed(2);
+                                        const name = item.name || item.item_name || 'Item';
+                                        return (
+                                            <div
+                                                key={index}
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "flex-start",
+                                                    padding: "4px 0",
+                                                    borderBottom: index < items.length - 1 ? "1px dashed #ccc" : "none",
+                                                    fontSize: "11px",
+                                                }}
+                                            >
+                                                <span style={{ width: "8%", fontWeight: "700" }}>{qty}</span>
+                                                <span style={{ width: "52%", paddingLeft: "4px", fontWeight: "500" }}>{name}</span>
+                                                <span style={{ width: "18%", textAlign: "center", opacity: 0.75 }}>
+                                                    {price.toFixed(0)}
+                                                </span>
+                                                <span style={{ width: "22%", textAlign: "right", fontWeight: "700" }}>
+                                                    ₹{amount}
+                                                </span>
                                             </div>
-                                        ))}
-                                    </div>
+                                        );
+                                    })}
                                 </div>
 
-                                <Separator className="my-4" />
+                                {/* Dashed divider */}
+                                <div style={{ borderTop: "1px dashed #000", margin: "8px 0" }} />
 
                                 {/* Totals */}
-                                <div className="space-y-3 bg-muted/30 p-4 rounded-lg">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="font-medium">Subtotal:</span>
-                                        <span className="font-semibold">₹{parseFloat(billData.subtotal || 0).toFixed(2)}</span>
+                                <div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", fontSize: "11px" }}>
+                                        <span style={{ opacity: 0.7 }}>TOTAL ITEMS</span>
+                                        <span style={{ fontWeight: "600" }}>{totalQty}</span>
                                     </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="font-medium">Tax (5%):</span>
-                                        <span className="font-semibold">₹{parseFloat(billData.tax || 0).toFixed(2)}</span>
+                                    <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", fontSize: "11px" }}>
+                                        <span style={{ opacity: 0.7 }}>SUBTOTAL</span>
+                                        <span style={{ fontWeight: "600" }}>₹{subtotal}</span>
                                     </div>
-                                    <Separator />
-                                    <div className="flex justify-between text-xl font-bold pt-2">
-                                        <span>Total Amount:</span>
-                                        <span className="text-primary text-2xl">₹{parseFloat(billData.total_amount || 0).toFixed(2)}</span>
+                                    <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", fontSize: "11px" }}>
+                                        <span style={{ opacity: 0.7 }}>TAX (5% GST)</span>
+                                        <span style={{ fontWeight: "600" }}>₹{tax}</span>
                                     </div>
                                 </div>
 
-                                <Separator className="my-4" />
+                                {/* Solid divider before grand total */}
+                                <div style={{ borderTop: "2px solid #000", margin: "6px 0" }} />
+
+                                {/* Grand Total */}
+                                <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+                                    <span style={{ fontWeight: "700", fontSize: "14px", letterSpacing: "0.05em" }}>TOTAL</span>
+                                    <span style={{ fontWeight: "700", fontSize: "16px" }}>₹{totalAmount}</span>
+                                </div>
+
+                                {/* Solid divider */}
+                                <div style={{ borderTop: "2px solid #000", margin: "8px 0" }} />
 
                                 {/* Footer */}
-                                <div className="text-center space-y-2 py-4">
-                                    <p className="text-sm font-semibold">Thank you for dining with us!</p>
-                                    <p className="text-xs text-muted-foreground">We hope to serve you again soon</p>
-                                    <div className="h-px bg-gradient-to-r from-transparent via-muted-foreground/20 to-transparent mt-4"></div>
+                                <div style={{ textAlign: "center", fontSize: "10px" }}>
+                                    <div style={{ fontWeight: "700", letterSpacing: "0.08em" }}>
+                                        THANK YOU FOR DINING WITH US!
+                                    </div>
+                                    <div style={{ opacity: 0.6, marginTop: "4px", fontSize: "9px" }}>
+                                        We hope to serve you again soon
+                                    </div>
+                                    <div style={{ borderTop: "1px dashed #000", margin: "6px 0" }} />
+                                    <div style={{ opacity: 0.5, fontSize: "9px" }}>
+                                        Powered by Khao Peeo POS · netbro.in
+                                    </div>
                                 </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-3 pt-4">
-                            <Button onClick={handlePrint} className="flex-1" size="lg">
-                                <Printer className="h-4 w-4 mr-2" />
-                                Print Bill
-                            </Button>
-                            <Button onClick={onClose} variant="outline" className="flex-1" size="lg">
-                                <X className="h-4 w-4 mr-2" />
-                                Close
-                            </Button>
-                        </div>
+                            </div>
+                        )}
                     </div>
-                )}
-            </DialogContent>
-        </Dialog>
+
+                    {/* Close button when error */}
+                    {error && !loading && (
+                        <button
+                            onClick={onClose}
+                            className="w-full py-2.5 rounded-lg text-sm font-semibold border transition-all hover:opacity-80 print:hidden"
+                            style={{ borderColor: "#e1bfb4", color: "#594139", backgroundColor: "#fff" }}
+                        >
+                            Close
+                        </button>
+                    )}
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
     );
 };
 

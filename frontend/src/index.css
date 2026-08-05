@@ -1,114 +1,151 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Quicksand:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/*
+ * Khao Peeo — Saffron Operational Interface
+ * Design system aligned with Stitch "Saffron Operational Interface"
+ * All colors are HSL-mapped from Stitch hex tokens.
+ */
 
 @layer base {
   :root {
-    --background: 35 20% 97%;
-    --foreground: 20 14% 10%;
+    /* Core surface — warm off-white #fff8f6 */
+    --background: 20 100% 99%;
+    --foreground: 15 30% 12%;
 
+    /* Cards — pure white */
     --card: 0 0% 100%;
-    --card-foreground: 20 14% 10%;
+    --card-foreground: 15 30% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 20 14% 10%;
+    --popover-foreground: 15 30% 12%;
 
-    --primary: 24 88% 50%;
+    /* Primary saffron — #E85D25 */
+    --primary: 18 80% 53%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 345 75% 45%;
+    /* Secondary — muted warm gray */
+    --secondary: 0 0% 37%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 35 15% 92%;
-    --muted-foreground: 25 10% 45%;
+    /* Muted — surface container #ffe9e3 */
+    --muted: 16 100% 95%;
+    --muted-foreground: 20 28% 38%;
 
-    --accent: 40 100% 50%;
-    --accent-foreground: 20 14% 10%;
+    /* Accent — primary fixed dim #ffb59b */
+    --accent: 16 100% 81%;
+    --accent-foreground: 15 30% 12%;
 
-    --destructive: 0 84.2% 60.2%;
+    /* Destructive — #ba1a1a */
+    --destructive: 0 75% 41%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 35 20% 88%;
-    --input: 35 20% 88%;
-    --ring: 24 88% 50%;
+    /* Border — outline-variant #e1bfb4 */
+    --border: 16 30% 80%;
+    --input: 16 30% 80%;
+    --ring: 18 80% 53%;
 
-    --success: 142 76% 36%;
+    /* Status colors */
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
-
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
+    /* Border radius — 12px cards, 8px buttons/inputs */
     --radius: 0.75rem;
 
-    --gradient-warm: linear-gradient(135deg, hsl(24 88% 50%) 0%, hsl(345 75% 45%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(35 20% 99%) 0%, hsl(35 20% 97%) 100%);
-    --shadow-glow: 0 10px 40px -10px hsl(24 88% 50% / 0.3);
-    --shadow-card: 0 4px 20px hsl(20 14% 10% / 0.08);
+    /* Shadows */
+    --shadow-card: 0 2px 8px hsl(15 30% 12% / 0.04);
+    --shadow-modal: 0 8px 24px hsl(15 30% 12% / 0.08);
+    --shadow-glow: 0 10px 40px -10px hsl(18 80% 53% / 0.3);
 
-    --sidebar-background: 35 25% 98%;
-    --sidebar-foreground: 20 14% 10%;
-    --sidebar-primary: 24 88% 50%;
+    /* Stitch extended surface tokens (used directly via Tailwind) */
+    --surface: 20 100% 99%;
+    --surface-dim: 16 44% 87%;
+    --surface-bright: 20 100% 99%;
+    --surface-container-lowest: 0 0% 100%;
+    --surface-container-low: 20 100% 97%;
+    --surface-container: 16 100% 95%;
+    --surface-container-high: 14 83% 93%;
+    --surface-container-highest: 16 33% 91%;
+    --surface-variant: 16 54% 91%;
+    --on-surface: 15 30% 12%;
+    --on-surface-variant: 16 26% 37%;
+    --inverse-surface: 15 22% 17%;
+    --outline-variant: 16 30% 80%;
+    --primary-container: 17 72% 42%;
+    --primary-fixed: 16 100% 90%;
+    --primary-fixed-dim: 16 100% 81%;
+
+    /* Sidebar */
+    --sidebar-background: 15 22% 17%;
+    --sidebar-foreground: 16 100% 99%;
+    --sidebar-primary: 18 80% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 35 25% 95%;
-    --sidebar-accent-foreground: 20 14% 10%;
-    --sidebar-border: 35 20% 90%;
-    --sidebar-ring: 24 88% 50%;
+    --sidebar-accent: 16 20% 25%;
+    --sidebar-accent-foreground: 16 100% 90%;
+    --sidebar-border: 16 20% 22%;
+    --sidebar-ring: 18 80% 53%;
   }
 
   .dark {
-    --background: 20 15% 8%;
-    --foreground: 35 20% 95%;
+    --background: 15 20% 8%;
+    --foreground: 20 30% 94%;
 
-    --card: 20 15% 10%;
-    --card-foreground: 35 20% 95%;
+    --card: 15 20% 11%;
+    --card-foreground: 20 30% 94%;
 
-    --popover: 20 15% 10%;
-    --popover-foreground: 35 20% 95%;
+    --popover: 15 20% 11%;
+    --popover-foreground: 20 30% 94%;
 
-    --primary: 24 88% 55%;
+    --primary: 18 80% 58%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 345 75% 50%;
+    --secondary: 0 0% 42%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 20 15% 15%;
-    --muted-foreground: 35 15% 65%;
+    --muted: 15 20% 16%;
+    --muted-foreground: 20 20% 65%;
 
-    --accent: 40 100% 55%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 16 80% 70%;
+    --accent-foreground: 15 30% 12%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 62.8% 40%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 20 15% 18%;
-    --input: 20 15% 18%;
-    --ring: 24 88% 55%;
+    --border: 15 20% 20%;
+    --input: 15 20% 20%;
+    --ring: 18 80% 58%;
 
-    --success: 142 76% 40%;
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
-
     --warning: 38 92% 55%;
     --warning-foreground: 0 0% 100%;
 
-    --gradient-warm: linear-gradient(135deg, hsl(24 88% 55%) 0%, hsl(345 75% 50%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(20 15% 10%) 0%, hsl(20 15% 8%) 100%);
-    --shadow-glow: 0 10px 40px -10px hsl(24 88% 55% / 0.4);
-    --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.5);
+    --surface: 15 20% 8%;
+    --surface-container-low: 15 20% 11%;
+    --surface-container: 15 20% 14%;
+    --surface-container-high: 15 20% 17%;
+    --surface-variant: 15 20% 20%;
+    --on-surface: 20 30% 94%;
+    --on-surface-variant: 20 20% 65%;
+    --inverse-surface: 20 30% 90%;
+    --outline-variant: 15 20% 25%;
+    --primary-container: 17 72% 42%;
+    --primary-fixed: 16 100% 90%;
+    --primary-fixed-dim: 16 100% 81%;
 
-    --sidebar-background: 20 15% 10%;
-    --sidebar-foreground: 35 20% 95%;
-    --sidebar-primary: 24 88% 55%;
+    --sidebar-background: 15 25% 10%;
+    --sidebar-foreground: 20 30% 94%;
+    --sidebar-primary: 18 80% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 20 15% 15%;
-    --sidebar-accent-foreground: 35 20% 95%;
-    --sidebar-border: 20 15% 18%;
-    --sidebar-ring: 24 88% 55%;
+    --sidebar-accent: 15 20% 16%;
+    --sidebar-accent-foreground: 20 30% 94%;
+    --sidebar-border: 15 20% 18%;
+    --sidebar-ring: 18 80% 58%;
   }
 }
 
@@ -123,110 +160,185 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-feature-settings: 'tnum'; /* tabular numbers for POS data */
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: 'Poppins', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-weight: 700;
   }
 
-  /* Smooth animations */
+  /* Smooth animation timing */
   * {
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Custom scrollbar */
+  /* Custom scrollbar — saffron accent */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
-
   ::-webkit-scrollbar-track {
     background: hsl(var(--muted));
   }
-
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--primary));
-    border-radius: 4px;
+    background: hsl(16 30% 80%);
+    border-radius: 10px;
   }
-
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--primary) / 0.8);
+    background: hsl(var(--primary) / 0.7);
   }
 }
 
-/* Animation utilities */
+/* ================================
+   ANIMATION UTILITIES
+================================ */
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
-.animate-fade-in-up {
-  animation: fadeInUp 0.6s ease-out;
+@keyframes tablePulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 hsl(18 80% 53% / 0); }
+  50%       { transform: scale(1.03); box-shadow: 0 0 0 10px hsl(18 80% 53% / 0.25); }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.6s ease-out;
+@keyframes badgePulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.7; }
 }
 
-.animate-slide-in-right {
-  animation: slideInRight 0.6s ease-out;
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(0.9); }
 }
 
-.animate-scale-in {
-  animation: scaleIn 0.4s ease-out;
+.animate-fade-in-up    { animation: fadeInUp 0.5s ease-out; }
+.animate-fade-in       { animation: fadeIn 0.5s ease-out; }
+.animate-slide-in-right { animation: slideInRight 0.5s ease-out; }
+.animate-scale-in      { animation: scaleIn 0.35s ease-out; }
+.table-pulse           { animation: tablePulse 1.5s ease-in-out infinite; }
+.notification-badge    { animation: badgePulse 2s ease-in-out infinite; }
+.status-dot-pulse      { animation: statusPulse 2s ease-in-out infinite; }
+
+/* ================================
+   GLASSMORPHISM
+================================ */
+.glass-card {
+  background: hsl(0 0% 100% / 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsl(16 30% 80% / 0.5);
+}
+.dark .glass-card {
+  background: hsl(15 20% 11% / 0.85);
+  border: 1px solid hsl(15 20% 20% / 0.5);
 }
 
-/* Thermal Printer Receipt Styling */
+/* ================================
+   SAFFRON SIDEBAR SHELL
+================================ */
+.sidebar-shell {
+  background-color: #3c2d28; /* inverse-surface */
+  color: #ffede8;            /* inverse-on-surface */
+}
+.sidebar-nav-item {
+  @apply flex items-center gap-4 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 cursor-pointer;
+  color: #f7ddd5; /* surface-variant */
+}
+.sidebar-nav-item:hover {
+  background-color: hsl(0 0% 100% / 0.08);
+}
+.sidebar-nav-item.active {
+  color: #ffb59b; /* primary-fixed-dim */
+  background-color: hsl(0 0% 100% / 0.1);
+  border-left: 3px solid #ffb59b;
+}
+
+/* ================================
+   KOT (Kitchen Order Ticket) CARD
+================================ */
+.kot-card {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  background: #ffffff;
+  border: 1px solid hsl(16 30% 80%);
+  border-radius: 0.5rem;
+}
+.kot-card-header {
+  background-image: linear-gradient(to right, hsl(16 30% 80%) 50%, transparent 0%);
+  background-position: bottom;
+  background-size: 8px 1px;
+  background-repeat: repeat-x;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+.kot-urgent-grey   { background-color: hsl(0 0% 92%); }
+.kot-urgent-amber  { background-color: hsl(38 92% 92%); }
+.kot-urgent-red    { background-color: hsl(0 75% 95%); }
+
+/* ================================
+   STAT CARD
+================================ */
+.stat-card {
+  @apply bg-white rounded-xl border p-5;
+  border-color: hsl(var(--border));
+  box-shadow: var(--shadow-card);
+}
+.stat-card-icon {
+  @apply w-10 h-10 rounded-full flex items-center justify-center;
+  background-color: hsl(var(--primary-fixed));
+}
+.stat-number {
+  font-family: 'Sora', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.15;
+  font-feature-settings: 'tnum';
+}
+.label-caps {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ================================
+   STATUS DOTS / TABLE CARD BORDERS
+================================ */
+.status-available { border-bottom: 3px solid #22C55E; }
+.status-occupied  { border-bottom: 3px solid hsl(18 80% 53%); }
+.status-payment   { border-bottom: 3px solid #ba1a1a; }
+
+/* ================================
+   TOUCH TARGET
+================================ */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* ================================
+   THERMAL PRINTER RECEIPT
+================================ */
 .thermal-receipt {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
   width: 80mm;
   max-width: 100%;
   background: white;
@@ -236,7 +348,6 @@ All colors MUST be HSL.
   font-size: 12px;
 }
 
-/* Responsive thermal receipt for mobile */
 @media (max-width: 640px) {
   .thermal-receipt {
     width: 100%;
@@ -253,19 +364,16 @@ All colors MUST be HSL.
   border-bottom: 2px dashed #000;
   padding-bottom: 8px;
 }
-
 .thermal-receipt-line {
   display: flex;
   justify-content: space-between;
   margin: 4px 0;
   flex-wrap: wrap;
 }
-
 .thermal-receipt-separator {
   border-top: 1px dashed #000;
   margin: 8px 0;
 }
-
 .thermal-receipt-footer {
   text-align: center;
   margin-top: 12px;
@@ -274,104 +382,29 @@ All colors MUST be HSL.
   font-size: 11px;
 }
 
-/* Responsive utilities */
-.touch-target {
-  min-height: 44px;
-  min-width: 44px;
-}
-
-/* Mobile-friendly spacing */
+/* ================================
+   RESPONSIVE UTILITIES
+================================ */
 @media (max-width: 640px) {
-  .mobile-stack>*+* {
-    margin-top: 0.5rem;
-  }
-
-  .mobile-text-sm {
-    font-size: 0.875rem;
-  }
-
-  .mobile-text-xs {
-    font-size: 0.75rem;
-  }
+  .mobile-stack > * + * { margin-top: 0.5rem; }
+  .mobile-text-sm { font-size: 0.875rem; }
+  .mobile-text-xs { font-size: 0.75rem; }
 }
 
-/* Table Pulse Animation */
-@keyframes tablePulse {
-
-  0%,
-  100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(247, 119, 34, 0);
-  }
-
-  50% {
-    transform: scale(1.03);
-    box-shadow: 0 0 0 10px rgba(247, 119, 34, 0.3);
-  }
-}
-
-.table-pulse {
-  animation: tablePulse 1.5s ease-in-out infinite;
-}
-
-/* Glassmorphism Effects */
-.glass-card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.dark .glass-card {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Notification Badge Pulse */
-@keyframes badgePulse {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.7;
-  }
-}
-
-.notification-badge {
-  animation: badgePulse 2s ease-in-out infinite;
-}
-
-/* Print styles for receipts */
+/* ================================
+   PRINT STYLES
+================================ */
 @media print {
-  body * {
-    visibility: hidden;
-  }
-
+  body * { visibility: hidden; }
   .thermal-receipt,
-  .thermal-receipt * {
-    visibility: visible;
-  }
-
+  .thermal-receipt * { visibility: visible; }
   .thermal-receipt {
     position: absolute;
-    left: 0;
-    top: 0;
+    left: 0; top: 0;
     width: 80mm;
     margin: 0;
     padding: 10mm;
   }
-
-  /* Hide print buttons and other UI elements */
-  .print\\:hidden {
-    display: none !important;
-  }
-
-  /* Set page size for thermal printer */
-  @page {
-    size: 80mm auto;
-    margin: 0;
-  }
+  .print\:hidden { display: none !important; }
+  @page { size: 80mm auto; margin: 0; }
 }

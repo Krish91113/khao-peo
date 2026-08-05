@@ -528,49 +528,6 @@ const TableManagementEnhanced = ({ onTableSelect, onResetTable, onGenerateKOT }:
           </div>
         </TabsContent>
 
-        {/* Active Orders Tab */}
-        <TabsContent value="active">
-          <div className="space-y-3 sm:space-y-4">
-            {activeOrders.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 sm:py-12 text-center">
-                  <ChefHat className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
-                  <p className="text-sm sm:text-base text-muted-foreground">No active orders</p>
-                </CardContent>
-              </Card>
-            ) : (
-              activeOrders.map((order) => (
-                <Card key={order._id || order.id}>
-                  <CardHeader className="pb-3 sm:pb-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-                      <div>
-                        <CardTitle className="text-base sm:text-lg">Table {order.table?.table_number || order.table?.tableNumber}</CardTitle>
-                        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                          {new Date(order.created_at || order.createdAt).toLocaleTimeString()}
-                        </p>
-                      </div>
-                      {getOrderStatusBadge(order.status)}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {order.items?.map((item: any, idx: number) => (
-                        <div key={idx} className="flex justify-between text-xs sm:text-sm">
-                          <span>{item.item_name} × {item.quantity}</span>
-                          <span>₹{(item.price * item.quantity).toFixed(2)}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="pt-2 border-t mt-3 sm:mt-4">
-                      <span className="font-bold text-sm sm:text-base">Total: ₹{parseFloat(String(order.total_amount || order.totalAmount)).toFixed(2)}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-        </TabsContent>
-
         {/* Running Orders Tab */}
         <TabsContent value="running">
           <div className="space-y-3 sm:space-y-4">
@@ -729,6 +686,48 @@ const TableManagementEnhanced = ({ onTableSelect, onResetTable, onGenerateKOT }:
           )}
         </TabsContent>
 
+        {/* Active Orders Tab */}
+        <TabsContent value="active">
+          <div className="space-y-3 sm:space-y-4">
+            {activeOrders.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 sm:py-12 text-center">
+                  <ChefHat className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
+                  <p className="text-sm sm:text-base text-muted-foreground">No active orders</p>
+                </CardContent>
+              </Card>
+            ) : (
+              activeOrders.map((order) => (
+                <Card key={order._id || order.id}>
+                  <CardHeader className="pb-3 sm:pb-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                      <div>
+                        <CardTitle className="text-base sm:text-lg">Table {order.table?.table_number || order.table?.tableNumber}</CardTitle>
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                          {new Date(order.created_at || order.createdAt).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      {getOrderStatusBadge(order.status)}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {order.items?.map((item: any, idx: number) => (
+                        <div key={idx} className="flex justify-between text-xs sm:text-sm">
+                          <span>{item.item_name} × {item.quantity}</span>
+                          <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="pt-2 border-t mt-3 sm:mt-4">
+                      <span className="font-bold text-sm sm:text-base">Total: ₹{parseFloat(String(order.total_amount || order.totalAmount)).toFixed(2)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
       </Tabs>
 
       {showBill && billData && (

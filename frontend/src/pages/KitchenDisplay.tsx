@@ -2,11 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authAPI } from "@/api/auth";
 import { ordersAPI } from "@/api/orders";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChefHat, LogOut, Clock, CheckCircle } from "lucide-react";
+import { LogOut, ChefHat, Clock, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 
@@ -17,15 +13,21 @@ interface OrderWithItems {
   total_amount: number;
   created_at: string;
   updated_at: string;
-  table: {
-    table_number: string;
-  };
-  items: Array<{
-    item_name: string;
-    quantity: number;
-    price: number;
-  }>;
+  table: { table_number: string };
+  items: Array<{ item_name: string; quantity: number; price: number }>;
 }
+
+/* Get minutes elapsed since a time */
+const minutesSince = (isoTime: string) =>
+  Math.floor((Date.now() - new Date(isoTime).getTime()) / 60000);
+
+/* Urgency header color by age */
+const getUrgencyStyle = (createdAt: string) => {
+  const mins = minutesSince(createdAt);
+  if (mins >= 20) return { bg: "#ffdad6", color: "#93000a", label: "URGENT" };
+  if (mins >= 10) return { bg: "#fdf4e3", color: "#92400e", label: "DELAYED" };
+  return { bg: "#fff1ec", color: "#E85D25", label: "NEW" };
+};
 
 const KitchenDisplay = () => {
   const navigate = useNavigate();
@@ -39,31 +41,18 @@ const KitchenDisplay = () => {
   const checkAuth = async () => {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
-    
-    if (!token || !userStr) {
-      navigate("/auth");
-      return;
-    }
-
+    if (!token || !userStr) { navigate("/auth"); return; }
     try {
       const user = JSON.parse(userStr);
-      // Allow kitchen, admin, and owner roles
-      if (!user) {
-        toast.error("Access denied.");
-        navigate("/");
-        return;
-      }
+      if (!user) { toast.error("Access denied."); navigate("/"); return; }
       setProfile(user);
-    } catch (error) {
-      console.error("Failed to parse user data:", error);
+    } catch {
       navigate("/auth");
     }
   };
 
   const fetchOrders = async (): Promise<OrderWithItems[]> => {
     const orders = await ordersAPI.getAll();
-    
-    // Filter and transform to match expected format
     return orders
       .filter((order: any) => ["sent_to_kitchen", "preparing", "ready"].includes(order.status))
       .map((order: any): OrderWithItems => ({
@@ -73,9 +62,9 @@ const KitchenDisplay = () => {
         total_amount: order.total_amount || order.totalAmount,
         created_at: order.created_at || order.createdAt,
         updated_at: order.updated_at || order.updatedAt,
-        table: order.table ? {
-          table_number: order.table.table_number || order.table.tableNumber?.toString(),
-        } : { table_number: "" },
+        table: order.table
+          ? { table_number: order.table.table_number || order.table.tableNumber?.toString() }
+          : { table_number: "" },
         items: order.items || [],
       }))
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -84,7 +73,7 @@ const KitchenDisplay = () => {
   const { data: orders = [], refetch: refetchOrders, isLoading } = useQuery({
     queryKey: ["kitchen-orders"],
     queryFn: fetchOrders,
-    refetchInterval: 3000, // Poll every 3 seconds for real-time updates
+    refetchInterval: 3000,
   });
 
   const handleSignOut = async () => {
@@ -100,224 +89,231 @@ const KitchenDisplay = () => {
       refetchOrders();
     } catch (error: any) {
       toast.error("Failed to update order status: " + (error.response?.data?.message || error.message));
-      console.error(error);
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-      sent_to_kitchen: { label: "New Order", variant: "destructive" },
-      preparing: { label: "Preparing", variant: "outline" },
-      ready: { label: "Ready", variant: "default" },
-    };
+  const newOrders      = orders.filter((o) => o.status === "sent_to_kitchen");
+  const preparingOrders = orders.filter((o) => o.status === "preparing");
+  const readyOrders    = orders.filter((o) => o.status === "ready");
 
-    const config = statusConfig[status] || { label: status, variant: "secondary" };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+  const TABS = [
+    { id: "queue",     label: "New Orders", count: newOrders.length,       icon: ChefHat },
+    { id: "preparing", label: "Preparing",  count: preparingOrders.length, icon: Clock },
+    { id: "ready",     label: "Ready",      count: readyOrders.length,     icon: CheckCircle },
+  ];
+
+  const tabOrders = { queue: newOrders, preparing: preparingOrders, ready: readyOrders };
+
+  /* Minimal KOT card for Kitchen */
+  const KOTCard = ({ order, nextStatus, nextLabel }: { order: OrderWithItems; nextStatus?: string; nextLabel?: string }) => {
+    const urgency = getUrgencyStyle(order.created_at);
+    return (
+      <div
+        className="bg-white rounded-lg overflow-hidden"
+        style={{ border: "1px solid #e1bfb4", boxShadow: "0 2px 8px rgba(38,24,20,0.06)" }}
+      >
+        {/* Card header — urgency colored */}
+        <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: urgency.bg }}>
+          <div>
+            <p
+              className="text-xl font-bold"
+              style={{ fontFamily: "Sora, sans-serif", color: "#261814" }}
+            >
+              Table {order.table.table_number}
+            </p>
+            <p
+              className="text-xs font-semibold uppercase tracking-wider mt-0.5"
+              style={{ color: urgency.color }}
+            >
+              {urgency.label} · {minutesSince(order.created_at)}m ago
+            </p>
+          </div>
+          <span
+            className="text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wider"
+            style={{ backgroundColor: urgency.color + "22", color: urgency.color }}
+          >
+            {minutesSince(order.created_at)}m
+          </span>
+        </div>
+
+        {/* Dashed divider */}
+        <div
+          style={{
+            borderTop: "none",
+            backgroundImage: "linear-gradient(to right, #8d7167 50%, transparent 0%)",
+            backgroundPosition: "top",
+            backgroundSize: "8px 1px",
+            backgroundRepeat: "repeat-x",
+            height: "1px",
+          }}
+        />
+
+        {/* Items — JetBrains Mono */}
+        <div className="p-4 space-y-2">
+          {order.items.map((item: any, idx: number) => (
+            <div
+              key={idx}
+              className="flex items-center justify-between py-1"
+              style={{ borderBottom: idx < order.items.length - 1 ? "1px dashed #e1bfb4" : "none" }}
+            >
+              <span
+                className="text-sm font-medium"
+                style={{ fontFamily: "JetBrains Mono, monospace", color: "#261814" }}
+              >
+                {item.item_name}
+              </span>
+              <span
+                className="text-lg font-bold"
+                style={{ fontFamily: "JetBrains Mono, monospace", color: "#E85D25" }}
+              >
+                × {item.quantity}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Action button */}
+        {nextStatus && (
+          <div className="px-4 pb-4">
+            <button
+              onClick={() => updateOrderStatus(order.id, nextStatus)}
+              className="w-full py-2.5 rounded-md text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+              style={{ backgroundColor: nextStatus === "ready" ? "#22C55E" : "#E85D25" }}
+            >
+              {nextLabel}
+            </button>
+          </div>
+        )}
+        {!nextStatus && (
+          <div
+            className="px-4 pb-4 pt-2 text-center text-sm font-semibold"
+            style={{ color: "#22C55E" }}
+          >
+            ✓ Awaiting Pickup
+          </div>
+        )}
+      </div>
+    );
   };
 
-  const newOrders = orders.filter((o) => o.status === "sent_to_kitchen");
-  const preparingOrders = orders.filter((o) => o.status === "preparing");
-  const readyOrders = orders.filter((o) => o.status === "ready");
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      {/* Header */}
-      <header className="border-b bg-card/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ChefHat className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-xl font-bold">KHAO PEEO KITCHEN</h1>
-              <p className="text-xs text-muted-foreground">Kitchen Display System</p>
-            </div>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#261814" }}>
+
+      {/* ── DARK HEADER ─────────────────────────────────────── */}
+      <header
+        className="flex-shrink-0 flex items-center justify-between px-6 sticky top-0 z-50"
+        style={{ height: "64px", backgroundColor: "#3c2d28", borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+      >
+        <div className="flex items-center gap-3">
+          <ChefHat className="h-7 w-7" style={{ color: "#ffb59b" }} />
+          <div>
+            <h1 className="text-lg font-bold" style={{ fontFamily: "Sora, sans-serif", color: "#ffffff" }}>
+              Khao Peeo Kitchen
+            </h1>
+            <p className="text-[10px] uppercase tracking-widest" style={{ color: "#ffb59b", opacity: 0.8 }}>
+              Kitchen Display System
+            </p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-medium">{profile?.full_name || "Kitchen Staff"}</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {/* Clock */}
+          <p className="text-sm font-medium hidden sm:block" style={{ fontFamily: "JetBrains Mono, monospace", color: "#f7ddd5" }}>
+            {new Date().toLocaleTimeString()}
+          </p>
+          <div className="text-right hidden md:block">
+            <p className="text-sm font-medium" style={{ color: "#f7ddd5" }}>
+              {profile?.full_name || "Kitchen Staff"}
+            </p>
           </div>
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all hover:opacity-80"
+            style={{ borderColor: "rgba(255,255,255,0.2)", color: "#f7ddd5" }}
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Sign Out</span>
+          </button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Order Queue</h2>
-          <p className="text-muted-foreground">Manage kitchen orders and preparation status</p>
-        </div>
-
-        {/* Tabs for different order views */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="queue" className="relative">
-              New Orders
-              {newOrders.length > 0 && (
-                <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
-                  {newOrders.length}
-                </Badge>
+      {/* ── TAB SWITCHER ─────────────────────────────────────── */}
+      <div
+        className="px-6 py-3 flex items-center gap-2 sticky z-40"
+        style={{ top: "64px", backgroundColor: "#3c2d28" }}
+      >
+        {TABS.map(({ id, label, count, icon: Icon }) => {
+          const isActive = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+              style={{
+                backgroundColor: isActive ? "#E85D25" : "rgba(255,255,255,0.08)",
+                color: isActive ? "#ffffff" : "#f7ddd5",
+              }}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+              {count > 0 && (
+                <span
+                  className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                  style={{ backgroundColor: isActive ? "rgba(255,255,255,0.3)" : "#E85D25" }}
+                >
+                  {count}
+                </span>
               )}
-            </TabsTrigger>
-            <TabsTrigger value="preparing">Preparing</TabsTrigger>
-            <TabsTrigger value="ready">Ready</TabsTrigger>
-          </TabsList>
-
-          {/* New Orders Queue */}
-          <TabsContent value="queue" className="space-y-4">
-            {isLoading ? (
-              <div className="text-center py-8">Loading orders...</div>
-            ) : newOrders.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">No new orders</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {newOrders.map((order) => (
-                  <Card key={order.id} className="border-2 border-destructive">
-                    <CardHeader className="bg-destructive/10">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-2xl">Table {order.table.table_number}</CardTitle>
-                        {getStatusBadge(order.status)}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {new Date(order.created_at).toLocaleTimeString()}
-                      </p>
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                      <div className="space-y-3 mb-4">
-                        {order.items.map((item: any, idx: number) => (
-                          <div key={idx} className="flex justify-between items-center p-2 bg-muted rounded-lg">
-                            <div>
-                              <p className="font-bold text-lg">{item.item_name}</p>
-                              <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
-                            </div>
-                            <span className="text-2xl font-bold text-primary">× {item.quantity}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <Button
-                        onClick={() => updateOrderStatus(order.id, "preparing")}
-                        className="w-full"
-                        size="lg"
-                      >
-                        <Clock className="h-4 w-4 mr-2" />
-                        Start Preparing
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Preparing Orders */}
-          <TabsContent value="preparing" className="space-y-4">
-            {isLoading ? (
-              <div className="text-center py-8">Loading orders...</div>
-            ) : preparingOrders.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">No orders being prepared</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {preparingOrders.map((order) => (
-                  <Card key={order.id} className="border-2 border-primary">
-                    <CardHeader className="bg-primary/10">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-2xl">Table {order.table.table_number}</CardTitle>
-                        {getStatusBadge(order.status)}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Started: {new Date(order.updated_at).toLocaleTimeString()}
-                      </p>
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                      <div className="space-y-3 mb-4">
-                        {order.items.map((item: any, idx: number) => (
-                          <div key={idx} className="flex justify-between items-center p-2 bg-muted rounded-lg">
-                            <div>
-                              <p className="font-bold text-lg">{item.item_name}</p>
-                              <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
-                            </div>
-                            <span className="text-2xl font-bold text-primary">× {item.quantity}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <Button
-                        onClick={() => updateOrderStatus(order.id, "ready")}
-                        className="w-full"
-                        size="lg"
-                        variant="default"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Mark as Ready
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Ready Orders */}
-          <TabsContent value="ready" className="space-y-4">
-            {isLoading ? (
-              <div className="text-center py-8">Loading orders...</div>
-            ) : readyOrders.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">No ready orders</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {readyOrders.map((order) => (
-                  <Card key={order.id} className="border-2 border-green-500 opacity-75">
-                    <CardHeader className="bg-green-500/10">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-2xl">Table {order.table.table_number}</CardTitle>
-                        {getStatusBadge(order.status)}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Ready at: {new Date(order.updated_at).toLocaleTimeString()}
-                      </p>
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                      <div className="space-y-3">
-                        {order.items.map((item: any, idx: number) => (
-                          <div key={idx} className="flex justify-between items-center p-2 bg-muted rounded-lg">
-                            <div>
-                              <p className="font-bold text-lg">{item.item_name}</p>
-                              <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
-                            </div>
-                            <span className="text-2xl font-bold text-primary">× {item.quantity}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-4 p-3 bg-green-500/20 rounded-lg text-center">
-                        <p className="font-bold text-green-700">Waiting for waiter pickup</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+            </button>
+          );
+        })}
       </div>
+
+      {/* ── KANBAN CONTENT ───────────────────────────────────── */}
+      <main className="flex-1 p-6 overflow-y-auto">
+        {isLoading ? (
+          <div className="text-center py-16" style={{ color: "#f7ddd5" }}>
+            Loading kitchen orders...
+          </div>
+        ) : tabOrders[activeTab as keyof typeof tabOrders].length === 0 ? (
+          <div className="text-center py-16">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+            >
+              {activeTab === "queue" && <ChefHat className="h-8 w-8 text-[#ffb59b]" />}
+              {activeTab === "preparing" && <Clock className="h-8 w-8 text-[#ffb59b]" />}
+              {activeTab === "ready" && <CheckCircle className="h-8 w-8 text-[#22C55E]" />}
+            </div>
+            <p className="text-sm" style={{ color: "#f7ddd5", opacity: 0.7 }}>
+              {activeTab === "queue" ? "No new orders in queue" :
+               activeTab === "preparing" ? "No orders currently being prepared" :
+               "No orders ready for pickup"}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {tabOrders[activeTab as keyof typeof tabOrders].map((order) => (
+              <KOTCard
+                key={order.id}
+                order={order}
+                nextStatus={
+                  activeTab === "queue"     ? "preparing" :
+                  activeTab === "preparing" ? "ready"     :
+                  undefined
+                }
+                nextLabel={
+                  activeTab === "queue"     ? "Start Preparing" :
+                  activeTab === "preparing" ? "Mark as Ready"   :
+                  undefined
+                }
+              />
+            ))}
+          </div>
+        )}
+      </main>
     </div>
   );
 };
 
 export default KitchenDisplay;
-

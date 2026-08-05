@@ -4,15 +4,11 @@ import { motion } from "framer-motion";
 import { authAPI } from "@/api/auth";
 import { tablesAPI } from "@/api/tables";
 import { ordersAPI } from "@/api/orders";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UtensilsCrossed, LogOut, Bell, CheckCircle, Clock, ChefHat, Plus } from "lucide-react";
+import { Bell, LogOut, CheckCircle, Clock, ChefHat, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import OrderEntry from "@/components/OrderEntry";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { pageTransitionConfig } from "@/lib/animations";
 
 interface OrderWithItems {
@@ -21,15 +17,16 @@ interface OrderWithItems {
   status: string;
   total_amount: number;
   created_at: string;
-  table: {
-    table_number: string;
-  };
-  items: Array<{
-    item_name: string;
-    quantity: number;
-    price: number;
-  }>;
+  table: { table_number: string };
+  items: Array<{ item_name: string; quantity: number; price: number }>;
 }
+
+const TABS = [
+  { id: "new-order", label: "New Order",  icon: Plus },
+  { id: "ready",     label: "Ready",      icon: CheckCircle },
+  { id: "active",    label: "Active",     icon: Clock },
+  { id: "served",    label: "Served",     icon: ChefHat },
+];
 
 const WaiterDashboard = () => {
   const navigate = useNavigate();
@@ -43,58 +40,37 @@ const WaiterDashboard = () => {
     checkAuth();
     fetchTables();
 
-    // Polling replaces real-time subscriptions
-    const ordersInterval = setInterval(() => {
-      refetchOrders();
-    }, 5000);
-
-    const tablesInterval = setInterval(() => {
-      fetchTables();
-    }, 5000);
-
-    return () => {
-      clearInterval(ordersInterval);
-      clearInterval(tablesInterval);
-    };
+    const ordersInterval = setInterval(() => { refetchOrders(); }, 5000);
+    const tablesInterval = setInterval(() => { fetchTables(); }, 5000);
+    return () => { clearInterval(ordersInterval); clearInterval(tablesInterval); };
   }, []);
 
   const fetchTables = async () => {
     try {
       const data = await tablesAPI.getAll();
       setTables(data);
-    } catch (error: any) {
-      toast.error("Failed to load tables");
-    }
+    } catch { toast.error("Failed to load tables"); }
   };
 
   const checkAuth = async () => {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
-
-    if (!token || !userStr) {
-      navigate("/auth");
-      return;
-    }
-
+    if (!token || !userStr) { navigate("/auth"); return; }
     try {
       const user = JSON.parse(userStr);
-      // Allow waiter, admin, and owner roles
       if (!["waiter", "admin", "owner", "restaurant_admin", "restaurant_owner"].includes(user.role)) {
         toast.error("Access denied. Waiter role required.");
         navigate("/");
         return;
       }
       setProfile(user);
-    } catch (error) {
-      console.error("Failed to parse user data:", error);
+    } catch {
       navigate("/auth");
     }
   };
 
   const fetchOrders = async (): Promise<OrderWithItems[]> => {
     const orders = await ordersAPI.getAll();
-
-    // Transform to match expected format
     return orders.map((order: any) => ({
       id: order._id || order.id,
       _id: order._id || order.id,
@@ -103,9 +79,7 @@ const WaiterDashboard = () => {
       total_amount: order.total_amount || order.totalAmount,
       created_at: order.created_at || order.createdAt,
       updated_at: order.updated_at || order.updatedAt,
-      table: order.table ? {
-        table_number: order.table.table_number || order.table.tableNumber?.toString(),
-      } : null,
+      table: order.table ? { table_number: order.table.table_number || order.table.tableNumber?.toString() } : null,
       items: order.items || [],
     }));
   };
@@ -113,19 +87,13 @@ const WaiterDashboard = () => {
   const { data: orders = [], refetch: refetchOrders, isLoading } = useQuery({
     queryKey: ["waiter-orders"],
     queryFn: fetchOrders,
-    refetchInterval: 5000, // Poll every 5 seconds for Stage 2
+    refetchInterval: 5000,
   });
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     authAPI.logout();
     toast.success("Signed out successfully");
     navigate("/");
-  };
-
-  const markOrderReady = async (orderId: string) => {
-    // Kitchen marks as ready - waiter should just acknowledge
-    toast.info("Order marked as ready by kitchen");
-    refetchOrders();
   };
 
   const markOrderServed = async (orderId: string) => {
@@ -135,293 +103,291 @@ const WaiterDashboard = () => {
       refetchOrders();
     } catch (error: any) {
       toast.error("Failed to update order status: " + (error.response?.data?.message || error.message));
-      console.error(error);
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-      sent_to_kitchen: { label: "Sent to Kitchen", variant: "secondary" },
-      preparing: { label: "Preparing", variant: "outline" },
-      ready: { label: "Ready", variant: "default" },
-      served: { label: "Served", variant: "secondary" },
+  const getStatusStyles = (status: string) => {
+    const map: Record<string, { label: string; bg: string; color: string }> = {
+      sent_to_kitchen: { label: "Sent to Kitchen", bg: "#e3f0fb", color: "#3B82F6" },
+      preparing:       { label: "Preparing",       bg: "#fdf4e3", color: "#F59E0B" },
+      ready:           { label: "Ready",           bg: "#e8f5e9", color: "#22C55E" },
+      served:          { label: "Served",          bg: "#fce3db", color: "#E85D25" },
     };
-
-    const config = statusConfig[status] || { label: status, variant: "secondary" };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    return map[status] || { label: status, bg: "#f5f5f5", color: "#594139" };
   };
 
-  const readyOrders = orders.filter((o) => o.status === "ready");
+  const readyOrders  = orders.filter((o) => o.status === "ready");
   const activeOrders = orders.filter((o) => ["sent_to_kitchen", "preparing"].includes(o.status));
   const servedOrders = orders.filter((o) => o.status === "served");
 
+  const tabOrders: Record<string, OrderWithItems[]> = {
+    "ready":  readyOrders,
+    "active": activeOrders,
+    "served": servedOrders,
+  };
+
+  const EmptyState = ({ icon: Icon, message }: { icon: any; message: string }) => (
+    <div
+      className="flex flex-col items-center justify-center py-16 rounded-xl"
+      style={{ backgroundColor: "#ffffff", border: "1px solid #e1bfb4" }}
+    >
+      <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: "#fff1ec" }}>
+        <Icon className="h-7 w-7" style={{ color: "#E85D25" }} />
+      </div>
+      <p className="text-sm" style={{ color: "#594139" }}>{message}</p>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      {/* Header - Mobile responsive */}
-      <header className="border-b bg-card/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3 md:py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <UtensilsCrossed className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-              <div>
-                <h1 className="text-lg md:text-xl font-bold">KHAO PEEO</h1>
-                <p className="text-xs text-muted-foreground hidden md:block">Waiter Dashboard</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 md:gap-4">
-              {readyOrders.length > 0 && (
-                <Badge variant="destructive" className="animate-pulse">
-                  <Bell className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                  {readyOrders.length}
-                </Badge>
-              )}
-              <div className="text-right hidden md:block">
-                <p className="text-sm font-medium">{profile?.full_name || "Waiter"}</p>
-                <p className="text-xs text-muted-foreground capitalize">{profile?.role}</p>
-              </div>
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4" />
-                <span className="hidden md:inline ml-2">Sign Out</span>
-              </Button>
-            </div>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#fff8f6" }}>
+
+      {/* ── TOP BAR ─────────────────────────────────────────── */}
+      <header
+        className="flex-shrink-0 flex items-center justify-between px-6 sticky top-0 z-50"
+        style={{ height: "64px", backgroundColor: "#fff8f6", borderBottom: "1px solid #e1bfb4" }}
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-xl font-bold" style={{ fontFamily: "Sora, sans-serif", color: "#E85D25" }}>
+            Khao Peeo
+          </span>
+          <div className="h-5 w-px mx-1" style={{ backgroundColor: "#e1bfb4" }} />
+          <div className="flex flex-col">
+            <span
+              className="text-[10px] uppercase tracking-wider font-semibold"
+              style={{ color: "#594139", fontFamily: "Inter, sans-serif" }}
+            >
+              Waiter
+            </span>
+            <span className="text-sm font-semibold" style={{ fontFamily: "Sora, sans-serif", color: "#261814" }}>
+              {profile?.full_name || "Waiter"}
+            </span>
           </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {/* Ready orders alert */}
+          {readyOrders.length > 0 && (
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
+              style={{ backgroundColor: "#fce3db" }}
+            >
+              <Bell className="h-4 w-4" style={{ color: "#E85D25" }} />
+              <span className="text-sm font-bold" style={{ color: "#E85D25" }}>
+                {readyOrders.length} Ready
+              </span>
+            </div>
+          )}
+
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-all hover:opacity-80"
+            style={{ borderColor: "transparent", color: "#ba1a1a" }}
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline text-xs font-semibold uppercase tracking-wider">SIGN OUT</span>
+          </button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-4 md:py-8">
-        <div className="mb-6 md:mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold mb-2">Order Management</h2>
-          <p className="text-muted-foreground text-sm md:text-base">
-            Monitor and manage customer orders
-          </p>
-        </div>
+      {/* ── MAIN CONTENT ─────────────────────────────────────── */}
+      <main className="flex-1 container mx-auto px-4 py-6 max-w-5xl">
 
-        {/* Show Order Entry if table selected */}
+        {/* Order Entry view */}
         {showOrderEntry && selectedTable ? (
-          <div>
-            <Button
-              variant="outline"
-              className="mb-4"
-              onClick={() => {
-                setShowOrderEntry(false);
-                setSelectedTable(null);
-              }}
+          <div className="animate-fade-in">
+            <button
+              className="mb-4 flex items-center gap-2 px-4 py-2 rounded-md border text-sm font-medium transition-all hover:opacity-80"
+              style={{ borderColor: "#e1bfb4", color: "#594139" }}
+              onClick={() => { setShowOrderEntry(false); setSelectedTable(null); }}
             >
               ← Back to Dashboard
-            </Button>
+            </button>
             <OrderEntry
               table={selectedTable}
-              onComplete={() => {
-                setShowOrderEntry(false);
-                setSelectedTable(null);
-                refetchOrders();
-                fetchTables();
-              }}
+              onComplete={() => { setShowOrderEntry(false); setSelectedTable(null); refetchOrders(); fetchTables(); }}
             />
           </div>
         ) : (
-          /* Tabs for different order views */
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-6">
-              <TabsTrigger value="new-order">
-                <Plus className="h-4 w-4 mr-2" />
-                New Order
-              </TabsTrigger>
-              <TabsTrigger value="ready" className="relative">
-                Ready
-                {readyOrders.length > 0 && (
-                  <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
-                    {readyOrders.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="active">Active</TabsTrigger>
-              <TabsTrigger value="served">Served</TabsTrigger>
-            </TabsList>
+          <>
+            {/* Tab pills */}
+            <div
+              className="flex items-center gap-2 p-1 rounded-xl mb-6 overflow-x-auto"
+              style={{ backgroundColor: "#fce3db" }}
+            >
+              {TABS.map(({ id, label, icon: Icon }) => {
+                const isActive = activeTab === id;
+                const count = id === "ready" ? readyOrders.length : id === "active" ? activeOrders.length : id === "served" ? servedOrders.length : 0;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setActiveTab(id)}
+                    className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+                    style={{
+                      backgroundColor: isActive ? "#ffffff" : "transparent",
+                      color: isActive ? "#E85D25" : "#594139",
+                      boxShadow: isActive ? "0 1px 4px rgba(38,24,20,0.08)" : "none",
+                    }}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                    {count > 0 && (
+                      <span
+                        className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                        style={{ backgroundColor: id === "ready" ? "#22C55E" : "#E85D25" }}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
 
-            {/* New Order Tab - Stage 2 Smartphone Flow */}
-            <TabsContent value="new-order" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Select Table for New Order</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Choose a table to create a new order (Stage 2 - Smartphone Order Entry)
+            {/* ── NEW ORDER TAB ── */}
+            {activeTab === "new-order" && (
+              <div className="animate-fade-in">
+                <div
+                  className="bg-white rounded-xl p-6 mb-4"
+                  style={{ border: "1px solid #e1bfb4" }}
+                >
+                  <h3 className="font-semibold mb-1" style={{ fontFamily: "Sora, sans-serif", color: "#261814" }}>
+                    Select Table for New Order
+                  </h3>
+                  <p className="text-sm mb-5" style={{ color: "#594139" }}>
+                    Choose a table to create a new order
                   </p>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {tables.map((table) => (
-                      <Card
-                        key={table.id}
-                        className={`cursor-pointer transition-all hover:shadow-lg ${table.is_booked ? "border-muted opacity-60" : "border-border"
-                          }`}
-                        onClick={() => {
-                          if (!table.is_booked) {
-                            setSelectedTable(table);
-                            setShowOrderEntry(true);
-                          } else {
-                            toast.info("Table is already booked");
-                          }
+
+                  {/* Table strip */}
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                    {tables.map((table) => {
+                      const isBooked = table.is_booked;
+                      const dotColor = isBooked ? "#E85D25" : "#22C55E";
+                      return (
+                        <button
+                          key={table.id || table._id}
+                          className="flex flex-col items-center gap-2 px-3 py-3 rounded-xl border-2 transition-all duration-200 touch-target"
+                          style={{
+                            borderColor: isBooked ? "#E85D25" : "#e1bfb4",
+                            backgroundColor: isBooked ? "#fff1ec" : "#ffffff",
+                            cursor: isBooked ? "not-allowed" : "pointer",
+                            opacity: isBooked ? 0.7 : 1,
+                          }}
+                          onClick={() => {
+                            if (!isBooked) {
+                              setSelectedTable(table);
+                              setShowOrderEntry(true);
+                            } else {
+                              toast.info("Table is already booked");
+                            }
+                          }}
+                        >
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: dotColor }} />
+                          <span className="font-bold text-sm" style={{ fontFamily: "Sora, sans-serif", color: "#261814" }}>
+                            T {table.table_number}
+                          </span>
+                          <span className="text-[10px] uppercase tracking-wider" style={{ color: isBooked ? "#E85D25" : "#22C55E" }}>
+                            {isBooked ? "Booked" : "Free"}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── ORDER LIST TABS (ready / active / served) ── */}
+            {["ready", "active", "served"].includes(activeTab) && (
+              <div className="animate-fade-in space-y-4">
+                {isLoading ? (
+                  <div className="text-center py-12" style={{ color: "#8d7167" }}>Loading orders...</div>
+                ) : tabOrders[activeTab].length === 0 ? (
+                  <EmptyState
+                    icon={activeTab === "ready" ? CheckCircle : activeTab === "active" ? Clock : ChefHat}
+                    message={
+                      activeTab === "ready"  ? "No orders ready to serve" :
+                      activeTab === "active" ? "No active orders in kitchen" :
+                      "No served orders"
+                    }
+                  />
+                ) : (
+                  tabOrders[activeTab].map((order) => {
+                    const statusStyle = getStatusStyles(order.status);
+                    return (
+                      <div
+                        key={order.id}
+                        className="bg-white rounded-xl p-5"
+                        style={{
+                          border: `1px solid ${activeTab === "ready" ? "#22C55E" : "#e1bfb4"}`,
+                          borderLeft: `4px solid ${activeTab === "ready" ? "#22C55E" : activeTab === "active" ? "#E85D25" : "#8d7167"}`,
+                          boxShadow: "0 2px 8px rgba(38,24,20,0.04)",
+                          opacity: activeTab === "served" ? 0.75 : 1,
                         }}
                       >
-                        <CardContent className="p-4 text-center">
-                          <p className="text-xl font-bold">Table {table.table_number}</p>
-                          <Badge variant={table.is_booked ? "secondary" : "default"} className="mt-2">
-                            {table.is_booked ? "Booked" : "Available"}
-                          </Badge>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Ready Orders Tab */}
-            <TabsContent value="ready" className="space-y-4">
-              {isLoading ? (
-                <div className="text-center py-8">Loading orders...</div>
-              ) : readyOrders.length === 0 ? (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">No orders ready to serve</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                readyOrders.map((order) => (
-                  <Card key={order.id} className="border-2 border-primary">
-                    <CardHeader>
-                      <div className="flex items-center justify-between flex-wrap gap-2">
-                        <div>
-                          <CardTitle className="text-xl">Table {order.table.table_number}</CardTitle>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {new Date(order.created_at).toLocaleTimeString()}
-                          </p>
-                        </div>
-                        {getStatusBadge(order.status)}
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2 mb-4">
-                        {order.items.map((item: any, idx: number) => (
-                          <div key={idx} className="flex justify-between text-sm">
-                            <span>
-                              {item.item_name} × {item.quantity}
-                            </span>
-                            <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h4 className="font-bold text-lg" style={{ fontFamily: "Sora, sans-serif", color: "#261814" }}>
+                              Table {order.table?.table_number}
+                            </h4>
+                            <p className="text-xs" style={{ color: "#8d7167" }}>
+                              {new Date(order.created_at).toLocaleTimeString()}
+                            </p>
                           </div>
-                        ))}
-                      </div>
-                      <div className="flex justify-between items-center pt-2 border-t">
-                        <span className="font-bold">Total: ₹{parseFloat(String(order.total_amount)).toFixed(2)}</span>
-                        <Button onClick={() => markOrderServed(order.id)} size="sm">
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Mark as Served
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </TabsContent>
-
-            {/* Active Orders Tab */}
-            <TabsContent value="active" className="space-y-4">
-              {isLoading ? (
-                <div className="text-center py-8">Loading orders...</div>
-              ) : activeOrders.length === 0 ? (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">No active orders</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                activeOrders.map((order) => (
-                  <Card key={order.id}>
-                    <CardHeader>
-                      <div className="flex items-center justify-between flex-wrap gap-2">
-                        <div>
-                          <CardTitle className="text-lg md:text-xl">Table {order.table.table_number}</CardTitle>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {new Date(order.created_at).toLocaleTimeString()}
-                          </p>
+                          <span
+                            className="text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider"
+                            style={{ backgroundColor: statusStyle.bg, color: statusStyle.color }}
+                          >
+                            {statusStyle.label}
+                          </span>
                         </div>
-                        {getStatusBadge(order.status)}
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2 mb-4">
-                        {order.items.map((item: any, idx: number) => (
-                          <div key={idx} className="flex justify-between text-sm">
-                            <span>
-                              {item.item_name} × {item.quantity}
-                            </span>
-                            <span>₹{(item.price * item.quantity).toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="pt-2 border-t">
-                        <span className="font-bold">Total: ₹{parseFloat(String(order.total_amount)).toFixed(2)}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </TabsContent>
 
-            {/* Served Orders Tab */}
-            <TabsContent value="served" className="space-y-4">
-              {isLoading ? (
-                <div className="text-center py-8">Loading orders...</div>
-              ) : servedOrders.length === 0 ? (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <ChefHat className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">No served orders</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                servedOrders.map((order) => (
-                  <Card key={order.id} className="opacity-75">
-                    <CardHeader>
-                      <div className="flex items-center justify-between flex-wrap gap-2">
-                        <div>
-                          <CardTitle className="text-lg md:text-xl">Table {order.table.table_number}</CardTitle>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {new Date(order.created_at).toLocaleTimeString()}
-                          </p>
+                        {/* Items */}
+                        <div className="space-y-2 mb-4">
+                          {order.items.map((item: any, idx: number) => (
+                            <div
+                              key={idx}
+                              className="flex justify-between text-sm py-1"
+                              style={{ borderBottom: idx < order.items.length - 1 ? "1px dashed #e1bfb4" : "none" }}
+                            >
+                              <span style={{ color: "#261814" }}>
+                                {item.item_name} × {item.quantity}
+                              </span>
+                              <span className="font-semibold" style={{ fontFamily: "Sora, sans-serif", color: "#261814" }}>
+                                ₹{(item.price * item.quantity).toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
                         </div>
-                        {getStatusBadge(order.status)}
+
+                        <div
+                          className="flex items-center justify-between pt-3"
+                          style={{ borderTop: "1px solid #e1bfb4" }}
+                        >
+                          <span className="font-bold text-base" style={{ fontFamily: "Sora, sans-serif", color: "#261814" }}>
+                            Total: ₹{parseFloat(String(order.total_amount)).toFixed(2)}
+                          </span>
+                          {activeTab === "ready" && (
+                            <button
+                              onClick={() => markOrderServed(order.id)}
+                              className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+                              style={{ backgroundColor: "#22C55E" }}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                              Mark as Served
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {order.items.map((item: any, idx: number) => (
-                          <div key={idx} className="flex justify-between text-sm">
-                            <span>
-                              {item.item_name} × {item.quantity}
-                            </span>
-                            <span>₹{(item.price * item.quantity).toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="pt-2 border-t mt-4">
-                        <span className="font-bold">Total: ₹{parseFloat(String(order.total_amount)).toFixed(2)}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </TabsContent>
-          </Tabs>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </>
         )}
-      </div>
+      </main>
     </div>
   );
 };
 
 export default WaiterDashboard;
-

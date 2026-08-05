@@ -25,7 +25,18 @@ export const createRestaurant = async (req, res) => {
             plan, // "basic", "professional", "enterprise"
         } = req.body;
 
-        // 1. Check if restaurant slug exists
+        // 1. Validate owner email format
+        if (owner && owner.email) {
+            owner.email = owner.email.trim().toLowerCase();
+            const emailRegex = /^\S+@\S+\.\S+$/;
+            if (!emailRegex.test(owner.email)) {
+                await session.abortTransaction();
+                session.endSession();
+                return res.status(400).json({ message: "Invalid owner email format" });
+            }
+        }
+
+        // 2. Check if restaurant slug exists
         const existingSlug = await Restaurant.findOne({ slug });
         if (existingSlug) {
             await session.abortTransaction();
@@ -263,11 +274,11 @@ export const deleteRestaurant = async (req, res) => {
 
         // Delete all associated data in parallel
         await Promise.all([
-            User.deleteMany({ restaurantId: id }),
-            Subscription.deleteMany({ restaurantId: id }),
-            Table.deleteMany({ restaurantId: id }),
-            Order.deleteMany({ restaurantId: id }),
-            Bill.deleteMany({ restaurantId: id }),
+            User.deleteMany({ restaurantId: restaurant._id }),
+            Subscription.deleteMany({ restaurantId: restaurant._id }),
+            Table.deleteMany({ restaurantId: restaurant._id }),
+            Order.deleteMany({ restaurantId: restaurant._id }),
+            Bill.deleteMany({ restaurantId: restaurant._id }),
         ]);
 
         // Delete the restaurant itself

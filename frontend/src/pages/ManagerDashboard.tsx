@@ -4,9 +4,8 @@ import { motion } from "framer-motion";
 import { authAPI } from "@/api/auth";
 import { tablesAPI } from "@/api/tables";
 import { kotAPI } from "@/api/kot";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { UtensilsCrossed, LogOut, Bell } from "lucide-react";
+import { UtensilsCrossed, LogOut, Bell, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import TableManagement from "@/components/TableManagement";
@@ -15,9 +14,16 @@ import KOTReceipt from "@/components/KOTReceipt";
 import { pageTransitionConfig } from "@/lib/animations";
 import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates";
 
+/* ─── Sidebar nav items for Manager ─────────────────────────── */
+const NAV_ITEMS = [
+  { id: "tables",  label: "Tables",    icon: Settings },
+  { id: "orders",  label: "Orders",    icon: UtensilsCrossed },
+];
+
 const ManagerDashboard = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
+  const [activeSection, setActiveSection] = useState("tables");
   const [selectedTable, setSelectedTable] = useState<any>(null);
   const [showOrderEntry, setShowOrderEntry] = useState(false);
   const [showKOT, setShowKOT] = useState(false);
@@ -31,17 +37,11 @@ const ManagerDashboard = () => {
   const checkAuth = async () => {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
-
-    if (!token || !userStr) {
-      navigate("/auth");
-      return;
-    }
-
+    if (!token || !userStr) { navigate("/auth"); return; }
     try {
       const user = JSON.parse(userStr);
       setProfile(user);
-    } catch (error) {
-      console.error("Failed to parse user data:", error);
+    } catch {
       navigate("/auth");
     }
   };
@@ -53,14 +53,12 @@ const ManagerDashboard = () => {
         const tables = await tablesAPI.getAll();
         const bookedTables = tables.filter((t: any) => t.is_booked);
         setNewItemsCount(bookedTables.length);
-      } catch (error) {
-        console.error("Failed to fetch tables:", error);
-      }
+      } catch { /* silent */ }
     },
     interval: 3000,
   });
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     authAPI.logout();
     toast.success("Signed out successfully");
     navigate("/");
@@ -81,14 +79,9 @@ const ManagerDashboard = () => {
           price: item.price,
         })),
       });
-
       setKotData({
         table,
-        items: items.map(item => ({
-          name: item.name || item.item_name,
-          quantity: item.quantity,
-          price: item.price,
-        })),
+        items: items.map(item => ({ name: item.name || item.item_name, quantity: item.quantity, price: item.price })),
         kotNumber: kot.kot_number || kot.kotNumber || `KOT-${Date.now()}`,
       });
       setShowKOT(true);
@@ -101,83 +94,177 @@ const ManagerDashboard = () => {
   return (
     <motion.div
       {...pageTransitionConfig}
-      className="min-h-screen bg-gradient-to-b from-background to-muted/30"
+      className="flex h-screen overflow-hidden"
+      style={{ backgroundColor: "#fff8f6" }}
     >
-      {/* Header */}
-      <header className="border-b glass-card sticky top-0 z-50">
-        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <UtensilsCrossed className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
-            <div className="min-w-0">
-              <h1 className="text-sm sm:text-xl font-bold truncate">KHAO PEEO</h1>
-              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Manager Dashboard</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-4">
-            {newItemsCount > 0 && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="relative"
+
+      {/* ── SIDEBAR ─────────────────────────────────────────── */}
+      <aside
+        className="flex-shrink-0 flex flex-col py-6 z-50 hidden md:flex"
+        style={{ width: "260px", backgroundColor: "#fff1ec", borderRight: "1px solid #e1bfb4" }}
+      >
+        {/* Brand */}
+        <div className="px-6 mb-8">
+          <h1 className="text-lg font-bold" style={{ fontFamily: "Sora, sans-serif", color: "#261814" }}>
+            Khao Peeo
+          </h1>
+          <p className="text-xs" style={{ color: "#594139", opacity: 0.8 }}>
+            {profile?.restaurant_name || "Main Branch"}
+          </p>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 flex flex-col gap-1 px-3">
+          {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+            const isActive = activeSection === id && !showOrderEntry;
+            return (
+              <button
+                key={id}
+                onClick={() => { setActiveSection(id); setShowOrderEntry(false); setSelectedTable(null); }}
+                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 text-left w-full"
+                style={{
+                  backgroundColor: isActive ? "#cc490f" : "transparent",
+                  color: isActive ? "#fffbff" : "#594139",
+                }}
               >
-                <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                <Badge
-                  variant="destructive"
-                  className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 h-4 w-4 sm:h-5 sm:w-5 p-0 flex items-center justify-center notification-badge text-[10px] sm:text-xs"
-                >
-                  {newItemsCount}
-                </Badge>
-              </motion.div>
-            )}
-            <ThemeToggle />
-            <div className="text-right hidden lg:block">
-              <p className="text-sm font-medium">{profile?.full_name || "Manager"}</p>
-              <p className="text-xs text-muted-foreground capitalize">{profile?.role}</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleSignOut} className="h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-4">
-              <LogOut className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </Button>
-          </div>
-        </div>
-      </header>
+                <Icon className="h-4 w-4 flex-shrink-0" />
+                <span style={{ fontFamily: "Inter, sans-serif" }}>{label}</span>
+              </button>
+            );
+          })}
 
-      {/* Main Content */}
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <div className="mb-4 sm:mb-8 animate-fade-in-up">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Restaurant Management</h2>
-          <p className="text-sm sm:text-base text-muted-foreground">Manage tables, orders, and billing</p>
-        </div>
-
-        {!showOrderEntry ? (
-          <div className="animate-fade-in">
-            <TableManagement
-              onTableSelect={handleTableSelect}
-              onResetTable={(tableId) => {
-                if (selectedTable?.id === tableId) {
-                  setSelectedTable(null);
-                }
-              }}
-            />
+          {/* Inventory — Stitch shows it but not in app, render disabled */}
+          <div
+            className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-left opacity-40 cursor-not-allowed select-none"
+            style={{ color: "#594139" }}
+            title="Inventory management — coming soon"
+          >
+            <Settings className="h-4 w-4" />
+            <span style={{ fontFamily: "Inter, sans-serif" }}>Inventory</span>
           </div>
-        ) : (
-          <div className="animate-fade-in">
-            <Button
-              variant="outline"
-              className="mb-4 hover:bg-muted transition-all duration-300"
-              onClick={() => {
-                setShowOrderEntry(false);
-                setSelectedTable(null);
-              }}
+        </nav>
+
+        {/* New Order CTA */}
+        <div className="px-3 pt-4" style={{ borderTop: "1px solid #e1bfb4" }}>
+          {showOrderEntry ? (
+            <button
+              onClick={() => { setShowOrderEntry(false); setSelectedTable(null); }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-all"
+              style={{ borderColor: "#e1bfb4", color: "#594139" }}
             >
               ← Back to Tables
-            </Button>
-            <OrderEntry
-              table={selectedTable}
-              onComplete={() => setShowOrderEntry(false)}
-            />
+            </button>
+          ) : null}
+          <button
+            onClick={handleSignOut}
+            className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all hover:opacity-80"
+            style={{ color: "#594139" }}
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </button>
+        </div>
+      </aside>
+
+      {/* ── MAIN CONTENT ─────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+
+        {/* Top Bar */}
+        <header
+          className="flex-shrink-0 flex items-center justify-between px-6"
+          style={{ height: "64px", backgroundColor: "#fff8f6", borderBottom: "1px solid #e1bfb4" }}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-bold" style={{ fontFamily: "Sora, sans-serif", color: "#E85D25" }}>
+              Khao Peeo
+            </span>
+            <span className="h-4 w-px mx-1" style={{ backgroundColor: "#e1bfb4" }} />
+            <span className="text-sm" style={{ color: "#594139", fontFamily: "Inter, sans-serif" }}>
+              Manager Dashboard
+            </span>
           </div>
-        )}
+
+          <div className="flex items-center gap-3">
+            {/* Role pill */}
+            <div
+              className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
+              style={{ backgroundColor: "#fce3db", color: "#261814" }}
+            >
+              <span
+                className="w-2 h-2 rounded-full status-dot-pulse"
+                style={{ backgroundColor: "#22C55E" }}
+              />
+              Manager
+            </div>
+
+            {/* Bell */}
+            {newItemsCount > 0 && (
+              <div className="relative">
+                <Bell className="h-5 w-5" style={{ color: "#E85D25" }} />
+                <span
+                  className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[10px] text-white font-bold notification-badge"
+                  style={{ backgroundColor: "#ba1a1a" }}
+                >
+                  {newItemsCount}
+                </span>
+              </div>
+            )}
+
+            <ThemeToggle />
+
+            {/* User info */}
+            <div className="text-right hidden lg:block">
+              <p className="text-sm font-semibold" style={{ color: "#261814" }}>{profile?.full_name || "Manager"}</p>
+              <p className="text-xs capitalize" style={{ color: "#594139" }}>{profile?.role}</p>
+            </div>
+
+            {/* Sign out (mobile) */}
+            <button
+              onClick={handleSignOut}
+              className="md:hidden flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium border transition-all"
+              style={{ borderColor: "#E85D25", color: "#E85D25" }}
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="mb-6 animate-fade-in-up">
+            <h2 className="text-2xl font-bold mb-1" style={{ fontFamily: "Sora, sans-serif", color: "#261814" }}>
+              Restaurant Management
+            </h2>
+            <p className="text-sm" style={{ color: "#594139" }}>
+              Manage tables, orders, and billing
+            </p>
+          </div>
+
+          {!showOrderEntry ? (
+            <div className="animate-fade-in">
+              <TableManagement
+                onTableSelect={handleTableSelect}
+                onResetTable={(tableId) => {
+                  if (selectedTable?.id === tableId) setSelectedTable(null);
+                }}
+              />
+            </div>
+          ) : (
+            <div className="animate-fade-in">
+              <button
+                className="mb-4 flex items-center gap-2 px-4 py-2 rounded-md border text-sm font-medium transition-all hover:opacity-80"
+                style={{ borderColor: "#e1bfb4", color: "#594139" }}
+                onClick={() => { setShowOrderEntry(false); setSelectedTable(null); }}
+              >
+                ← Back to Tables
+              </button>
+              <OrderEntry
+                table={selectedTable}
+                onComplete={() => setShowOrderEntry(false)}
+              />
+            </div>
+          )}
+        </main>
       </div>
 
       {/* KOT Receipt Modal */}
@@ -186,10 +273,7 @@ const ManagerDashboard = () => {
           table={kotData.table}
           items={kotData.items}
           kotNumber={kotData.kotNumber}
-          onClose={() => {
-            setShowKOT(false);
-            setKotData(null);
-          }}
+          onClose={() => { setShowKOT(false); setKotData(null); }}
         />
       )}
     </motion.div>
@@ -197,4 +281,3 @@ const ManagerDashboard = () => {
 };
 
 export default ManagerDashboard;
-

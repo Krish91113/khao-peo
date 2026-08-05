@@ -49,10 +49,22 @@ export const getUsersByRole = async (req, res) => {
 export const getUserStats = async (req, res) => {
     try {
         const totalUsers = await User.countDocuments({ restaurantId: req.restaurantId });
-        const admins = await User.countDocuments({ role: "admin", restaurantId: req.restaurantId });
-        const owners = await User.countDocuments({ role: "owner", restaurantId: req.restaurantId });
-        const waiters = await User.countDocuments({ role: "waiter", restaurantId: req.restaurantId });
-        const superadmins = await User.countDocuments({ role: "superadmin", restaurantId: req.restaurantId });
+        const admins = await User.countDocuments({
+            role: { $in: ["admin", "restaurant_admin", "manager"] },
+            restaurantId: req.restaurantId,
+        });
+        const owners = await User.countDocuments({
+            role: { $in: ["owner", "restaurant_owner"] },
+            restaurantId: req.restaurantId,
+        });
+        const waiters = await User.countDocuments({
+            role: { $in: ["waiter"] },
+            restaurantId: req.restaurantId,
+        });
+        const superadmins = await User.countDocuments({
+            role: { $in: ["superadmin", "platform_superadmin"] },
+            restaurantId: req.restaurantId,
+        });
 
         // Get recent signups (last 7 days)
         const sevenDaysAgo = new Date();
@@ -138,8 +150,17 @@ export const createUser = async (req, res) => {
             });
         }
 
+        const sanitizedEmail = email.trim().toLowerCase();
+        const emailRegex = /^\S+@\S+\.\S+$/;
+        if (!emailRegex.test(sanitizedEmail)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid email format",
+            });
+        }
+
         // Check if user already exists
-        const existingUser = await User.findOne({ email });
+        const existingUser = await User.findOne({ email: sanitizedEmail });
         if (existingUser) {
             return res.status(400).json({
                 success: false,
@@ -154,7 +175,7 @@ export const createUser = async (req, res) => {
         // Create user
         const user = await User.create({
             fullName,
-            email,
+            email: sanitizedEmail,
             password: hashedPassword,
             role,
             restaurantId: req.restaurantId,

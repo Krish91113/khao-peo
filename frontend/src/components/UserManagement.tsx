@@ -44,18 +44,30 @@ export default function UserManagement() {
     const { data: usersData, isLoading } = useQuery({
         queryKey: ["superadmin-users"],
         queryFn: superadminAPI.getAllUsers,
-        refetchInterval: 5000,
+        refetchInterval: 3000,
     });
 
     // Fetch user statistics
     const { data: statsData } = useQuery({
         queryKey: ["superadmin-stats"],
         queryFn: superadminAPI.getUserStats,
-        refetchInterval: 10000,
+        refetchInterval: 3000,
     });
 
-    const users = usersData?.users || [];
-    const stats = statsData?.stats || {};
+    const users: User[] = usersData?.users || [];
+    const backendStats = statsData?.stats || {};
+
+    // Live counts computed directly from users array for real-time accuracy
+    const totalUsersCount = users.length > 0 ? users.length : (backendStats.total || 0);
+    const managersCount = users.length > 0
+        ? users.filter((u: any) => ["admin", "restaurant_admin", "manager"].includes(u.role)).length
+        : (backendStats.admins || 0);
+    const ownersCount = users.length > 0
+        ? users.filter((u: any) => ["owner", "restaurant_owner", "superadmin", "platform_superadmin"].includes(u.role)).length
+        : (backendStats.owners || 0);
+    const waitersCount = users.length > 0
+        ? users.filter((u: any) => u.role === "waiter").length
+        : (backendStats.waiters || 0);
 
     const createMutation = useMutation({
         mutationFn: superadminAPI.createUser,
@@ -178,45 +190,45 @@ export default function UserManagement() {
                 <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium flex items-center gap-2">
-                            <Users className="h-4 w-4" />
+                            <Users className="h-4 w-4 text-primary" />
                             Total Users
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.total || 0}</div>
+                        <div className="text-2xl font-bold" style={{ fontFamily: "Sora, sans-serif" }}>{totalUsersCount}</div>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium flex items-center gap-2">
-                            <Shield className="h-4 w-4" />
+                            <Shield className="h-4 w-4 text-primary" />
                             Managers
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.admins || 0}</div>
+                        <div className="text-2xl font-bold" style={{ fontFamily: "Sora, sans-serif" }}>{managersCount}</div>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium flex items-center gap-2">
-                            <UserCog className="h-4 w-4" />
+                            <UserCog className="h-4 w-4 text-primary" />
                             Owners
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.owners || 0}</div>
+                        <div className="text-2xl font-bold" style={{ fontFamily: "Sora, sans-serif" }}>{ownersCount}</div>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium flex items-center gap-2">
-                            <Users className="h-4 w-4" />
+                            <Users className="h-4 w-4 text-primary" />
                             Waiters
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.waiters || 0}</div>
+                        <div className="text-2xl font-bold" style={{ fontFamily: "Sora, sans-serif" }}>{waitersCount}</div>
                     </CardContent>
                 </Card>
             </div>

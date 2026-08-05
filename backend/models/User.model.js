@@ -14,9 +14,10 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
-      unique: true, // Note: This might need to be scoped to restaurantId later if we allow same email in diff restaurants, but for login simplicity keeping it unique globally for now or managing via compound index if needed. PRD says unique across platform.
+      unique: true, 
       lowercase: true,
       trim: true,
+      match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address'],
     },
     password: {
       type: String,
