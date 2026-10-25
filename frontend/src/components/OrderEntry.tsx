@@ -39,6 +39,7 @@ const OrderEntry = ({ table, onComplete }: OrderEntryProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [orderType, setOrderType] = useState<"dine_in" | "inhouse_delivery">("dine_in");
+  const [couponCode, setCouponCode] = useState("");
 
   // New state for dynamic menu
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -159,6 +160,7 @@ const OrderEntry = ({ table, onComplete }: OrderEntryProps) => {
           price: item.price,
         })),
         total_amount: total,
+        coupon_code: couponCode.trim() || undefined,
         orderType,
       });
 
@@ -166,6 +168,7 @@ const OrderEntry = ({ table, onComplete }: OrderEntryProps) => {
       setCart([]);
       setSelectedItem("");
       setQuantity(1);
+      setCouponCode("");
 
       const typeLabel = orderType === "inhouse_delivery" ? "In-house Delivery" : "Dine In";
       toast.success(`${typeLabel} order sent to kitchen successfully!`);
@@ -378,6 +381,9 @@ const OrderEntry = ({ table, onComplete }: OrderEntryProps) => {
                     <span>Total:</span>
                     <span>₹{total.toFixed(2)}</span>
                   </div>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <Input value={couponCode} onChange={(event) => setCouponCode(event.target.value)} placeholder="Manager coupon code (optional)" />
                 </div>
                 <div className="space-y-2">
                   <Button

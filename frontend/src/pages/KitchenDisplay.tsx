@@ -5,6 +5,8 @@ import { ordersAPI } from "@/api/orders";
 import { LogOut, ChefHat, Clock, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import { onKitchenEvent } from "@/lib/realtime";
+import PendingAttendanceRequests from "@/components/PendingAttendanceRequests";
 
 interface OrderWithItems {
   id: string;
@@ -75,6 +77,8 @@ const KitchenDisplay = () => {
     queryFn: fetchOrders,
     refetchInterval: 3000,
   });
+
+  useEffect(() => onKitchenEvent(() => { void refetchOrders(); }), [refetchOrders]);
 
   const handleSignOut = async () => {
     authAPI.logout();
@@ -236,6 +240,11 @@ const KitchenDisplay = () => {
           </button>
         </div>
       </header>
+
+      {/* Staff attendance confirmations are visible to cooks as well as waiters. */}
+      <div className="px-6 pt-4" style={{ backgroundColor: "#261814" }}>
+        <PendingAttendanceRequests />
+      </div>
 
       {/* ── TAB SWITCHER ─────────────────────────────────────── */}
       <div

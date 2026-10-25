@@ -1,23 +1,2 @@
-import http from "http";
-import app from "./app.js";
-import { connectDB } from "./config/db.js";
-import { ENV } from "./config/env.js";
-
-
-const server = http.createServer(app);
-
-const start = async () => {
-  await connectDB();
-  console.log("Connected to the database");
-
-  server.listen(ENV.PORT, () => {
-    console.log(`Server is running on port http://localhost:${ENV.PORT}`)
-  });
-};
-
-start().catch((err) => {
-  console.error("Failed to start server:", err);
-  process.exit(1);
-});
-
-
+// Legacy compatibility proxy for new TypeScript build output
+import "./dist/app/server.js";

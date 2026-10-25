@@ -35,14 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { Users, Building, DollarSign, Activity, Plus, Store, Search, LogOut, Settings, Trash2, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import axios from "axios";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const API_URL: string = (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_URL) || "http://localhost:5000/api";
-const getAuthHeader = () => {
-    const token = localStorage.getItem("token");
-    return { headers: { Authorization: `Bearer ${token}` } };
-};
+import apiClient from "../api/client";
 
 const PLAN_LABELS: Record<string, string> = {
     basic: "Basic",
@@ -65,6 +58,7 @@ const PlatformDashboard = () => {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [lastOnboarding, setLastOnboarding] = useState<{ email: string; delivered: boolean } | null>(null);
 
     const [createFormData, setCreateFormData] = useState({
         name: "",
@@ -98,7 +92,7 @@ const PlatformDashboard = () => {
 
     const fetchRestaurants = async () => {
         try {
-            const res = await axios.get(`${API_URL}/platform/restaurants`, getAuthHeader());
+            const res = await apiClient.get("/platform/restaurants");
             setRestaurants(res.data.restaurants || []);
         } catch (error) {
             console.error("Failed to fetch data", error);
@@ -109,7 +103,7 @@ const PlatformDashboard = () => {
     };
 
     const handleCreateRestaurant = async () => {
-        if (!createFormData.name || !createFormData.slug || !createFormData.ownerName || !createFormData.ownerEmail || !createFormData.ownerPassword) {
+        if (!createFormData.name || !createFormData.slug || !createFormData.ownerName || !createFormData.ownerEmail) {
             toast.error("Please fill in all required fields");
             return;
         }
@@ -128,13 +122,26 @@ const PlatformDashboard = () => {
                 plan: createFormData.plan,
             };
 
-            await axios.post(`${API_URL}/platform/restaurants`, payload, getAuthHeader());
-            toast.success("Restaurant created! Welcome email sent to owner.");
+            const response = await apiClient.post("/platform/restaurants", payload);
+            const emailResult = response.data?.email;
+            setLastOnboarding({ email: createFormData.ownerEmail, delivered: Boolean(emailResult?.success) });
+            toast.success(emailResult?.success ? "Restaurant created and welcome email sent." : "Restaurant created, but welcome email could not be delivered.");
             setCreateDialogOpen(false);
             setCreateFormData({ name: "", slug: "", ownerName: "", ownerEmail: "", ownerPassword: "", plan: "basic" });
             fetchRestaurants();
         } catch (error: any) {
             toast.error(error.response?.data?.message || "Failed to create restaurant");
+        }
+    };
+
+    const handleResendWelcome = async () => {
+        if (!selectedRestaurant) return;
+        try {
+            const response = await apiClient.post(`/platform/restaurants/${selectedRestaurant._id}/resend_welcome_email`);
+            const result = response.data?.email;
+            toast[result?.success ? "success" : "error"](result?.success ? "Welcome email resent." : "Welcome email could not be delivered.");
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to resend welcome email");
         }
     };
 
@@ -162,7 +169,7 @@ const PlatformDashboard = () => {
                 payload.ownerPassword = manageFormData.ownerPassword;
             }
 
-            await axios.put(`${API_URL}/platform/restaurants/${selectedRestaurant._id}`, payload, getAuthHeader());
+            await apiClient.put(`/platform/restaurants/${selectedRestaurant._id}`, payload);
             toast.success("Restaurant updated successfully!");
             setManageDialogOpen(false);
             setSelectedRestaurant(null);
@@ -178,7 +185,7 @@ const PlatformDashboard = () => {
         if (!selectedRestaurant) return;
         setDeleting(true);
         try {
-            await axios.delete(`${API_URL}/platform/restaurants/${selectedRestaurant._id}`, getAuthHeader());
+            await apiClient.delete(`/platform/restaurants/${selectedRestaurant._id}`);
             toast.success(`Restaurant "${selectedRestaurant.name}" deleted successfully`);
             setDeleteConfirmOpen(false);
             setManageDialogOpen(false);
@@ -231,6 +238,16 @@ const PlatformDashboard = () => {
                     </Button>
                 </div>
             </div>
+
+            {lastOnboarding && (
+                <Card className="mb-4 border-green-200 bg-green-50">
+                    <CardContent className="py-3 text-sm">
+                        {lastOnboarding.delivered
+                            ? <>Restaurant created successfully. Welcome credentials were sent to <strong>{lastOnboarding.email}</strong>.</>
+                            : <>Restaurant created, but the welcome email could not be delivered to <strong>{lastOnboarding.email}</strong>. Use Resend Welcome Email from Manage.</>}
+                    </CardContent>
+                </Card>
+            )}
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 <TabsList>
@@ -492,7 +509,7 @@ const PlatformDashboard = () => {
 
             {/* === MANAGE RESTAURANT DIALOG === */}
             <Dialog open={manageDialogOpen} onOpenChange={setManageDialogOpen}>
-                <DialogContent className="sm:max-w-[520px]">
+                <DialogContent className="w-[calc(100%-2rem)] max-w-[520px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Settings className="h-5 w-5 text-primary" />
@@ -571,7 +588,7 @@ const PlatformDashboard = () => {
                         </div>
                     </div>
 
-                    <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between">
+                    <DialogFooter className="sticky bottom-0 -mx-6 -mb-6 bg-background/95 px-6 py-4 flex flex-col sm:flex-row gap-2 sm:justify-between border-t">
                         {/* Delete button on the left */}
                         <Button
                             variant="destructive"
@@ -582,6 +599,7 @@ const PlatformDashboard = () => {
                             Delete Restaurant
                         </Button>
                         <div className="flex gap-2">
+                            <Button variant="outline" onClick={handleResendWelcome}>Resend Welcome Email</Button>
                             <Button variant="outline" onClick={() => setManageDialogOpen(false)}>
                                 Cancel
                             </Button>

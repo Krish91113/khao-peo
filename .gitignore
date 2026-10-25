@@ -46,3 +46,7 @@ backend/createSuperAdmin.js
 
 # Artifacts (brain folder)
 .gemini/
+
+# Specifications & Design Docs
+*FRD*.md
+

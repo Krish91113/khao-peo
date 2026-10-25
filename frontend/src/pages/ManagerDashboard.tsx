@@ -5,19 +5,21 @@ import { authAPI } from "@/api/auth";
 import { tablesAPI } from "@/api/tables";
 import { kotAPI } from "@/api/kot";
 import { Badge } from "@/components/ui/badge";
-import { UtensilsCrossed, LogOut, Bell, Settings } from "lucide-react";
+import { UtensilsCrossed, LogOut, Bell, Settings, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import TableManagement from "@/components/TableManagement";
 import OrderEntry from "@/components/OrderEntry";
 import KOTReceipt from "@/components/KOTReceipt";
+import AttendanceDashboard from "@/components/AttendanceDashboard";
 import { pageTransitionConfig } from "@/lib/animations";
 import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates";
 
 /* ─── Sidebar nav items for Manager ─────────────────────────── */
 const NAV_ITEMS = [
-  { id: "tables",  label: "Tables",    icon: Settings },
-  { id: "orders",  label: "Orders",    icon: UtensilsCrossed },
+  { id: "tables",     label: "Tables",     icon: Settings },
+  { id: "orders",     label: "Orders",     icon: UtensilsCrossed },
+  { id: "attendance", label: "Attendance", icon: Clock },
 ];
 
 const ManagerDashboard = () => {
@@ -240,7 +242,11 @@ const ManagerDashboard = () => {
             </p>
           </div>
 
-          {!showOrderEntry ? (
+          {!showOrderEntry && activeSection === "attendance" ? (
+            <div className="animate-fade-in">
+              <AttendanceDashboard />
+            </div>
+          ) : !showOrderEntry ? (
             <div className="animate-fade-in">
               <TableManagement
                 onTableSelect={handleTableSelect}

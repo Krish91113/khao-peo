@@ -47,6 +47,8 @@ const Auth = () => {
         navigate("/owner-dashboard");
       } else if (userRole === "waiter") {
         navigate("/waiter-dashboard");
+      } else if (userRole === "cook") {
+        navigate("/cook/dashboard");
       } else {
         navigate("/manager-dashboard");
       }

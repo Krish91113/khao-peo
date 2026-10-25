@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Users, RefreshCw, Receipt, Printer, Plus, ChefHat, Clock, CheckCircle, Search, X } from "lucide-react";
+import { Users, RefreshCw, Receipt, Printer, Plus, ChefHat, Clock, CheckCircle, Search, X, Lock } from "lucide-react";
 import BillDisplay from "./BillDisplay";
 import KOTReceipt from "./KOTReceipt";
 import OrderEntry from "./OrderEntry";
@@ -58,11 +58,13 @@ const TableManagementEnhanced = ({ onTableSelect, onResetTable, onGenerateKOT }:
   const [reprintBillData, setReprintBillData] = useState<any>(null);
   const [showReprintBill, setShowReprintBill] = useState(false);
   const [restaurantName, setRestaurantName] = useState<string>("");
+  const [servedOrdersDenied, setServedOrdersDenied] = useState(false);
 
   // Get user role to check if admin
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
   const isAdmin = user?.role === 'admin' || user?.role === 'owner' || user?.role === 'superadmin' || user?.role === 'restaurant_owner' || user?.role === 'restaurant_admin' || user?.role === 'platform_superadmin';
+  const canViewServedOrders = !!user?.role && user?.role !== 'cook' && user?.role !== 'platform_superadmin';
 
   useEffect(() => {
     fetchTables();
@@ -117,11 +119,17 @@ const TableManagementEnhanced = ({ onTableSelect, onResetTable, onGenerateKOT }:
   };
 
   const fetchServedOrders = async () => {
+    if (servedOrdersDenied || !canViewServedOrders) return;
     try {
       const tableNum = tableNumberFilter ? parseInt(tableNumberFilter) : undefined;
       const data = await servedOrdersAPI.getAll(tableNum);
       setServedOrders(data);
     } catch (error: any) {
+      if (error?.response?.status === 403) {
+        setServedOrdersDenied(true);
+        setServedOrders([]);
+        return;
+      }
       console.error("Failed to load served orders:", error);
     }
   };
@@ -436,7 +444,16 @@ const TableManagementEnhanced = ({ onTableSelect, onResetTable, onGenerateKOT }:
               </div>
             </div>
 
-            {servedOrders.length === 0 ? (
+            {servedOrdersDenied ? (
+              <Card>
+                <CardContent className="py-8 sm:py-12 text-center">
+                  <Lock className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
+                  <p className="text-sm sm:text-base text-muted-foreground">
+                    Served order history is not available for your role.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : servedOrders.length === 0 ? (
               <Card>
                 <CardContent className="py-8 sm:py-12 text-center">
                   <CheckCircle className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />

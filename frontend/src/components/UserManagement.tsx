@@ -145,7 +145,7 @@ export default function UserManagement() {
             email: user.email,
             password: "",
             fullName: user.full_name || user.fullName || "",
-            role: user.role as "admin" | "waiter" | "owner",
+            role: user.role as "restaurant_owner" | "restaurant_admin" | "waiter" | "cook",
         });
         setIsEditDialogOpen(true);
     };
@@ -289,7 +289,7 @@ export default function UserManagement() {
                                 <Label>Role</Label>
                                 <Select
                                     value={formData.role}
-                                    onValueChange={(value: "admin" | "waiter") =>
+                                    onValueChange={(value: "restaurant_owner" | "restaurant_admin" | "waiter" | "cook") =>
                                         setFormData({ ...formData, role: value })
                                     }
                                 >
@@ -300,6 +300,7 @@ export default function UserManagement() {
                                         <SelectItem value="restaurant_owner">Owner</SelectItem>
                                         <SelectItem value="restaurant_admin">Manager</SelectItem>
                                         <SelectItem value="waiter">Waiter</SelectItem>
+                                        <SelectItem value="cook">Cook</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -450,7 +451,7 @@ export default function UserManagement() {
                             <Label>Role</Label>
                             <Select
                                 value={formData.role}
-                                onValueChange={(value: "admin" | "waiter") =>
+                                onValueChange={(value: "restaurant_owner" | "restaurant_admin" | "waiter" | "cook") =>
                                     setFormData({ ...formData, role: value })
                                 }
                             >
@@ -461,6 +462,7 @@ export default function UserManagement() {
                                     <SelectItem value="restaurant_owner">Owner</SelectItem>
                                     <SelectItem value="restaurant_admin">Manager</SelectItem>
                                     <SelectItem value="waiter">Waiter</SelectItem>
+                                    <SelectItem value="cook">Cook</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

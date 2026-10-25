@@ -408,3 +408,20 @@
   .print\:hidden { display: none !important; }
   @page { size: 80mm auto; margin: 0; }
 }
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}

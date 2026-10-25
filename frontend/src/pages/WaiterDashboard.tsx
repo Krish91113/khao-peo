@@ -9,6 +9,7 @@ import { Bell, LogOut, CheckCircle, Clock, ChefHat, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import OrderEntry from "@/components/OrderEntry";
+import ShiftTracker from "@/components/ShiftTracker";
 import { pageTransitionConfig } from "@/lib/animations";
 
 interface OrderWithItems {
@@ -209,6 +210,11 @@ const WaiterDashboard = () => {
           </div>
         ) : (
           <>
+            {/* Shift tracker */}
+            <div className="mb-6 animate-fade-in-up">
+              <ShiftTracker />
+            </div>
+
             {/* Tab pills */}
             <div
               className="flex items-center gap-2 p-1 rounded-xl mb-6 overflow-x-auto"

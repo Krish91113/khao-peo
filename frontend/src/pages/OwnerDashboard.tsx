@@ -40,19 +40,28 @@ import {
   IndianRupee,
   TrendingUp,
   UtensilsCrossed,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import UserManagement from "@/components/UserManagement";
 import FoodMenuManagement from "@/components/FoodMenuManagement";
 import TableManagement from "@/components/TableManagement";
 import OrderEntry from "@/components/OrderEntry";
+import AttendanceDashboard from "@/components/AttendanceDashboard";
+import InventoryManagement from "@/components/InventoryManagement";
+import CouponManagement from "@/components/CouponManagement";
+import AnalyticsDashboard from "@/components/AnalyticsDashboard";
 
 /* ─── Sidebar nav items for Owner ───────────────────────────── */
 const NAV_ITEMS = [
-  { id: "overview", label: "Overview",   icon: LayoutDashboard },
-  { id: "tables",   label: "Tables",     icon: Settings },
-  { id: "menu",     label: "Menu",       icon: Pizza },
-  { id: "staff",    label: "Staff",      icon: UserCog },
+  { id: "overview",    label: "Overview",    icon: LayoutDashboard },
+  { id: "analytics",   label: "Analytics",   icon: TrendingUp },
+  { id: "tables",      label: "Tables",      icon: Settings },
+  { id: "menu",        label: "Menu",        icon: Pizza },
+  { id: "staff",       label: "Staff",       icon: UserCog },
+  { id: "attendance",  label: "Attendance",  icon: Clock },
+  { id: "inventory",   label: "Inventory",   icon: UtensilsCrossed },
+  { id: "coupons",     label: "Coupons",     icon: Plus },
 ];
 
 const OwnerDashboard = () => {
@@ -270,10 +279,14 @@ const OwnerDashboard = () => {
         >
           <div>
             <h2 className="text-base font-semibold" style={{ fontFamily: "Sora, sans-serif", color: "#261814" }}>
-              {activeTab === "overview" && `Welcome back, ${profile?.full_name?.split(' ')[0] || "Owner"}`}
-              {activeTab === "tables"   && "Table Management"}
-              {activeTab === "menu"     && "Menu Management"}
-              {activeTab === "staff"    && "Staff Management"}
+              {activeTab === "overview"    && `Welcome back, ${profile?.full_name?.split(' ')[0] || "Owner"}`}
+              {activeTab === "analytics"   && "Owner Analytics"}
+              {activeTab === "tables"      && "Table Management"}
+              {activeTab === "menu"        && "Menu Management"}
+              {activeTab === "staff"       && "Staff Management"}
+              {activeTab === "attendance"  && "Attendance"}
+              {activeTab === "inventory"   && "Inventory"}
+              {activeTab === "coupons"     && "Coupons"}
             </h2>
             <span
               className="text-[10px] uppercase tracking-widest"
@@ -348,6 +361,13 @@ const OwnerDashboard = () => {
                   Use the sidebar to navigate between Tables, Menu, and Staff management. Select a tab to begin.
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* ── ANALYTICS TAB ────────────────────────────── */}
+          {activeTab === "analytics" && (
+            <div className="animate-fade-in">
+              <AnalyticsDashboard />
             </div>
           )}
 
@@ -537,6 +557,27 @@ const OwnerDashboard = () => {
           {activeTab === "staff" && (
             <div className="animate-fade-in">
               <UserManagement />
+            </div>
+          )}
+
+          {/* ── INVENTORY TAB ────────────────────────────── */}
+          {activeTab === "inventory" && (
+            <div className="animate-fade-in">
+              <InventoryManagement />
+            </div>
+          )}
+
+          {/* ── COUPONS TAB ───────────────────────────────── */}
+          {activeTab === "coupons" && (
+            <div className="animate-fade-in">
+              <CouponManagement />
+            </div>
+          )}
+
+          {/* ── ATTENDANCE TAB ───────────────────────────── */}
+          {activeTab === "attendance" && (
+            <div className="animate-fade-in">
+              <AttendanceDashboard />
             </div>
           )}
 

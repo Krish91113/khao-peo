@@ -11,7 +11,7 @@ export const pageTransitionConfig = {
     initial: "initial",
     animate: "animate",
     exit: "exit",
-    transition: { duration: 0.3, ease: "easeInOut" },
+    transition: { duration: 0.3, ease: "easeInOut" as const },
 };
 
 // Table pulse animation for new items

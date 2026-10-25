@@ -24,6 +24,7 @@ export interface CreateOrderData {
   table_id: string;
   items: OrderItem[];
   total_amount: number;
+  coupon_code?: string;
 }
 
 export const ordersAPI = {

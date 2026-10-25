@@ -12,6 +12,7 @@ import OwnerDashboard from "./pages/OwnerDashboard";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import WaiterDashboard from "./pages/WaiterDashboard";
 import KitchenDisplay from "./pages/KitchenDisplay";
+import CookDashboard from "./pages/CookDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import PlatformDashboard from "./pages/PlatformDashboard";
 import NotFound from "./pages/NotFound";
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/manager-dashboard" element={<ManagerDashboard />} />
             <Route path="/waiter-dashboard" element={<WaiterDashboard />} />
             <Route path="/kitchen-display" element={<KitchenDisplay />} />
+            <Route path="/cook/dashboard" element={<CookDashboard />} />
             <Route path="/superadmin-dashboard" element={<SuperAdminDashboard />} />
             <Route path="/platform-dashboard" element={<PlatformDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
